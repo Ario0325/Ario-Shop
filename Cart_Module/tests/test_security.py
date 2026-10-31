@@ -235,6 +235,33 @@ class CouponCheckoutTests(SecurityTestBase):
         self.assertTrue(code.user_can_use(self.user))
 
 
+class OrderEmailEscapingTests(SecurityTestBase):
+    @patch('Cart_Module.services.requests.post')
+    def test_user_html_is_escaped_in_invoice_payload(self, post):
+        order = self._order()
+        order.full_name = '<b>Evil</b>'
+        order.address = '<script>alert(1)</script>'
+        order.save(update_fields=['full_name', 'address'])
+        order.items.update(product_name='<img src=x onerror=alert(1)>')
+
+        N8nOrderService.send_order_confirmation(order)
+
+        payload = post.call_args.kwargs['json']
+        self.assertEqual(payload['customer_name'], '&lt;b&gt;Evil&lt;/b&gt;')
+        self.assertIn('&lt;script&gt;', payload['shipping_address'])
+        self.assertIn('&lt;img', payload['items'][0]['name'])
+
+    @override_settings(WORKER_SHARED_SECRET='worker-test-secret')
+    @patch('Cart_Module.services.requests.post')
+    def test_worker_shared_secret_header_is_sent(self, post):
+        order = self._order()
+
+        N8nOrderService.send_order_confirmation(order)
+
+        headers = post.call_args.kwargs['headers']
+        self.assertEqual(headers['X-Worker-Secret'], 'worker-test-secret')
+
+
 class ResponseHeaderTests(SecurityTestBase):
     def test_csp_header_is_present_on_html_pages(self):
         response = self.client.get('/')

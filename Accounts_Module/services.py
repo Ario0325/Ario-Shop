@@ -1,6 +1,7 @@
 import logging
 import requests
 from django.conf import settings
+from django.utils.html import escape
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +55,7 @@ class N8nAuthService:
         payload = {
             "event": "register",
             "email": email,
-            "username": username or "کاربر",
+            "username": escape(username or "کاربر"),
             "code": code,
             "reset_link": "",
             "sender_email": settings.N8N_SENDER_EMAIL,
@@ -67,7 +68,7 @@ class N8nAuthService:
         payload = {
             "event": "password_reset",
             "email": email,
-            "username": username or "کاربر",
+            "username": escape(username or "کاربر"),
             "code": code,
             "reset_link": "",
             "sender_email": settings.N8N_SENDER_EMAIL,

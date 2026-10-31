@@ -9,6 +9,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.db import transaction
 from django.utils import timezone
+from django.utils.html import escape
 
 from .models import CartItem
 
@@ -351,7 +352,7 @@ class N8nOrderService:
         items = []
         for item in order.items.select_related('product').all():
             items.append({
-                "name": item.product_name,
+                "name": escape(item.product_name),
                 "quantity": item.quantity,
                 "unit_price": int(item.price),
                 "total_price": int(item.total),
@@ -361,14 +362,14 @@ class N8nOrderService:
             "secret_token": cls.WEBHOOK_SECRET,
             "order_id": order.id,
             "order_number": order.order_number,
-            "customer_name": customer_name or "مشتری",
+            "customer_name": escape(customer_name or "مشتری"),
             "customer_email": customer_email or "",
             "payment_status": "paid",
             "total_price": int(order.subtotal),
             "shipping_cost": int(order.shipping_cost),
             "discount": int(order.discount_amount),
             "created_at": order.created_at.isoformat(),
-            "shipping_address": order.address,
+            "shipping_address": escape(order.address),
             "items": items,
             "sender_email": settings.N8N_SENDER_EMAIL,
         }
