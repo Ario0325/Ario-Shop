@@ -1,0 +1,12 @@
+{% comment %}
+    Standard inner-page header. Pass: title, desc, eyebrow, meta.
+    `meta` is plain text (rendered RTL) for counters such as «۱۲ محصول».
+{% endcomment %}
+<div class="ar-pagehead">
+    <div>
+        {% if eyebrow %}<span class="ar-eyebrow">{{ eyebrow }}</span>{% endif %}
+        <h1 class="ar-pagehead__title">{{ title }}</h1>
+        {% if desc %}<p class="ar-pagehead__desc">{{ desc }}</p>{% endif %}
+    </div>
+    {% if meta %}<div class="ar-pagehead__meta">{{ meta }}</div>{% endif %}
+</div>

@@ -1,0 +1,364 @@
+{% load i18n static admin_dashboard number_tags %}<!DOCTYPE html>
+{% get_current_language as LANGUAGE_CODE %}{% get_current_language_bidi as LANGUAGE_BIDI %}
+{% admin_navigation as nav_groups %}{% admin_alerts as alerts %}
+<html lang="{{ LANGUAGE_CODE|default:"fa-ir" }}" dir="{{ LANGUAGE_BIDI|yesno:'rtl,ltr,auto' }}">
+<head>
+<meta charset="utf-8">
+<title>{% block title %}{% endblock %}</title>
+<script>
+    // paint the saved theme before first paint (no flash)
+    try {
+        var saved = localStorage.getItem('ario-admin-theme');
+        if (saved === 'dark' || saved === 'light') {
+            document.documentElement.setAttribute('data-theme', saved);
+        }
+    } catch (e) {}
+</script>
+
+<link rel="stylesheet" href="{% block stylesheet %}{% static "admin/css/base.css" %}{% endblock %}">
+{% block dark-mode-vars %}{% endblock %}
+{% block extrastyle %}{% endblock %}
+{% if LANGUAGE_BIDI %}<link rel="stylesheet" href="{% block stylesheet_rtl %}{% static "admin/css/rtl.css" %}{% endblock %}">{% endif %}
+{% block extrahead %}{% endblock %}
+
+{% block responsive %}
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="stylesheet" href="{% static "admin/css/responsive.css" %}">
+{% if LANGUAGE_BIDI %}<link rel="stylesheet" href="{% static "admin/css/responsive_rtl.css" %}">{% endif %}
+{% endblock %}
+
+<link rel="stylesheet" href="{% static "admin/css/ario-admin.css" %}?v=2026-10-30a">
+{% block blockbots %}<meta name="robots" content="NONE,NOARCHIVE">{% endblock %}
+</head>
+
+<body class="adm {% if is_popup %}popup {% endif %}{% block bodyclass %}{% endblock %}"
+      data-admin-utc-offset="{% now "Z" %}">
+<a href="#content-start" class="skip-to-content-link">{% translate 'Skip to main content' %}</a>
+
+<svg width="0" height="0" class="adm-sprite" aria-hidden="true" focusable="false">
+    <defs>
+        <symbol id="i-dashboard" viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></symbol>
+        <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+        <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+        <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.4-3.4"/></symbol>
+        <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+        <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 9a6 6 0 1 0-12 0c0 5-2 6-2 6h16s-2-1-2-6z"/><path d="M10.5 20a2 2 0 0 0 3 0"/></symbol>
+        <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.6v2.2M12 19.2v2.2M2.6 12h2.2M19.2 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/></symbol>
+        <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.2A8.4 8.4 0 0 1 9.8 4 8.5 8.5 0 1 0 20 14.2z"/></symbol>
+        <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/></symbol>
+        <symbol id="i-logout" viewBox="0 0 24 24"><path d="M15 17l5-5-5-5"/><path d="M20 12H9"/><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3"/></symbol>
+        <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="8" r="4"/><path d="M11 11l9 9M17.5 17.5l2-2M14.5 14.5l2-2"/></symbol>
+        <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></symbol>
+        <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M2.8 20a6.2 6.2 0 0 1 12.4 0"/><path d="M16.5 5.2a3.2 3.2 0 0 1 0 5.6M18 20a6 6 0 0 0-2-4.4"/></symbol>
+        <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7.5 3v6c0 4.6-3.2 7.9-7.5 9-4.3-1.1-7.5-4.4-7.5-9V6z"/><path d="M9 12l2.2 2.2L15.5 10"/></symbol>
+        <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h4"/></symbol>
+        <symbol id="i-tag" viewBox="0 0 24 24"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.3"/></symbol>
+        <symbol id="i-box" viewBox="0 0 24 24"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></symbol>
+        <symbol id="i-bag" viewBox="0 0 24 24"><path d="M4 8h16l-1.2 12H5.2z"/><path d="M8.5 8V6.5a3.5 3.5 0 0 1 7 0V8"/></symbol>
+        <symbol id="i-cart" viewBox="0 0 24 24"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2.5 3h2.2l2.4 11.2h11.2l2.2-8H6"/></symbol>
+        <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3 3 8l9 5 9-5-9-5z"/><path d="M3 13l9 5 9-5"/></symbol>
+        <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M18.5 15.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/></symbol>
+        <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></symbol>
+        <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><circle cx="8.5" cy="10" r="1.6"/><path d="M4 17l4.5-4.5L13 17l3-3 4 4"/></symbol>
+        <symbol id="i-palette" viewBox="0 0 24 24"><path d="M12 21a9 9 0 1 1 9-9c0 2-1.6 3-3 3h-1.6a1.9 1.9 0 0 0-1.4 3.2c.5.6.2 1.8-1 1.8z"/><circle cx="7.5" cy="12" r="1.2"/><circle cx="9.5" cy="7.8" r="1.2"/><circle cx="14.5" cy="7.8" r="1.2"/></symbol>
+        <symbol id="i-ruler" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="2"/><path d="M7 8v3M11 8v4M15 8v3M19 8v4"/></symbol>
+        <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></symbol>
+        <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M4 7l8 6 8-6"/></symbol>
+        <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.6v.1"/></symbol>
+        <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.5-.6L3 21l1.7-4.6A8.4 8.4 0 0 1 3 11.5 8.4 8.4 0 0 1 11.4 3h.6a8.4 8.4 0 0 1 9 8.4z"/></symbol>
+        <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2.6v2.2M12 19.2v2.2M2.6 12h2.2M19.2 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/></symbol>
+        <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5.2l3.4 2"/></symbol>
+        <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 2.8 20h18.4z"/><path d="M12 9v4.5M12 17v.1"/></symbol>
+        <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+        <symbol id="i-check" viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6.5"/></symbol>
+        <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+        <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M4 6.5h14a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h12"/><path d="M20 11h-4a2 2 0 0 0 0 4h4"/></symbol>
+        <symbol id="i-trend" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 7-7"/><path d="M14 8h6v6"/></symbol>
+        <symbol id="i-menu-alt" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="6" rx="2"/><rect x="3" y="14" width="18" height="6" rx="2"/></symbol>
+    </defs>
+</svg>
+
+<div class="adm-app{% if is_popup %} adm-app--popup{% endif %}">
+
+    {% if not is_popup and has_permission %}
+    <aside class="adm-rail" id="adm-rail" aria-label="{% translate 'Sidebar' %}">
+        <div class="adm-rail__top">
+            <a href="{% url 'admin:index' %}" class="adm-brand" aria-label="آریو شاپ — پنل مدیریت">
+                <span class="adm-brand__mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false">
+                        <path d="M6.4 18.6 12 5.4l5.6 13.2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M9 14.2h6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+                    </svg>
+                </span>
+                <span class="adm-brand__text">
+                    <strong>آریو شاپ</strong>
+                    <small>ATELIER · پنل مدیریت</small>
+                </span>
+            </a>
+            <button class="adm-rail__close" id="adm-rail-close" type="button" aria-label="{% translate 'Close menu' %}">
+                <svg aria-hidden="true"><use href="#i-close"/></svg>
+            </button>
+        </div>
+
+        <button class="adm-navsearch" id="adm-search-open-rail" type="button" aria-haspopup="dialog">
+            <svg aria-hidden="true"><use href="#i-search"/></svg>
+            <span>جستجو در پنل…</span>
+            <kbd>Ctrl K</kbd>
+        </button>
+
+        <nav class="adm-nav" id="adm-nav" aria-label="ناوبری مدیریت">
+            <a class="adm-navlink{% if request.path == '/admin/' %} is-active{% endif %}" href="{% url 'admin:index' %}">
+                <span class="adm-navlink__icon"><svg aria-hidden="true"><use href="#i-dashboard"/></svg></span>
+                <span class="adm-navlink__label">داشبورد</span>
+            </a>
+
+            {% for group in nav_groups %}
+            <div class="adm-navgroup">
+                <p class="adm-navgroup__label"><span>{{ group.label }}</span></p>
+                {% for app in group.apps %}
+                {% for model in app.models %}
+                {% if model.url %}
+                <a class="adm-navlink{% if model.active %} is-active{% endif %}" href="{{ model.url }}">
+                    <span class="adm-navlink__icon"><svg aria-hidden="true"><use href="#i-{{ model.icon }}"/></svg></span>
+                    <span class="adm-navlink__label">{{ model.name }}</span>
+                    {% if model.badge %}<span class="adm-navlink__badge">{{ model.badge|ar_digits }}</span>{% endif %}
+                </a>
+                {% else %}
+                <span class="adm-navlink is-disabled">
+                    <span class="adm-navlink__icon"><svg aria-hidden="true"><use href="#i-{{ model.icon }}"/></svg></span>
+                    <span class="adm-navlink__label">{{ model.name }}</span>
+                </span>
+                {% endif %}
+                {% endfor %}
+                {% endfor %}
+            </div>
+            {% endfor %}
+        </nav>
+
+        <div class="adm-rail__foot">
+            <div class="adm-user">
+                <span class="adm-user__avatar" aria-hidden="true">{{ user.get_username|slice:":1"|upper }}</span>
+                <span class="adm-user__meta">
+                    <strong>{% firstof user.get_full_name user.get_username %}</strong>
+                    <small>{% if user.is_superuser %}دسترسی کامل{% else %}کاربر کارکنان{% endif %}</small>
+                </span>
+                <a href="{{ site_url }}" class="adm-user__site" target="_blank" rel="noopener" aria-label="{% translate 'View site' %}">
+                    <svg aria-hidden="true"><use href="#i-external"/></svg>
+                </a>
+            </div>
+            <div class="adm-rail__links">
+                {% if user.has_usable_password %}
+                <a href="{% url 'admin:password_change' %}" class="adm-rail__link">
+                    <svg aria-hidden="true"><use href="#i-key"/></svg>
+                    {% translate 'Change password' %}
+                </a>
+                {% endif %}
+                <form id="logout-form" method="post" action="{% url 'admin:logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="adm-rail__link adm-rail__link--danger">
+                        <svg aria-hidden="true"><use href="#i-logout"/></svg>
+                        {% translate 'Log out' %}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </aside>
+    <div class="adm-scrim" id="adm-scrim" hidden></div>
+    {% endif %}
+
+    <div class="adm-body" id="main">
+        {% if not is_popup %}
+        {% block header %}
+        <header class="adm-topbar">
+            <button class="adm-iconbtn adm-burger" id="adm-burger" type="button"
+                    aria-label="{% translate 'Toggle navigation' %}" aria-expanded="false" aria-controls="adm-rail">
+                <svg aria-hidden="true"><use href="#i-menu"/></svg>
+            </button>
+
+            <div class="adm-topbar__crumb">
+                {% block nav-breadcrumbs %}
+                <nav aria-label="{% translate 'Breadcrumbs' %}">
+                    {% block breadcrumbs %}
+                    <div class="breadcrumbs">
+                        <a href="{% url 'admin:index' %}">داشبورد</a>
+                        {% if title %}<span class="sep" aria-hidden="true">/</span><span class="current">{{ title }}</span>{% endif %}
+                    </div>
+                    {% endblock %}
+                </nav>
+                {% endblock %}
+            </div>
+
+            <div class="adm-topbar__tools">
+                <button class="adm-search-trigger" id="adm-search-open" type="button" aria-haspopup="dialog">
+                    <svg aria-hidden="true"><use href="#i-search"/></svg>
+                    <span class="adm-search-trigger__text">جستجو در پنل…</span>
+                    <kbd>Ctrl K</kbd>
+                </button>
+
+                <div class="adm-pop adm-quickadd-pop" data-pop>
+                    <button class="adm-iconbtn" type="button" data-pop-toggle
+                            aria-expanded="false" aria-controls="adm-quickadd" aria-label="افزودن سریع">
+                        <svg aria-hidden="true"><use href="#i-plus"/></svg>
+                    </button>
+                    <div class="adm-pop__panel adm-pop__panel--wide" id="adm-quickadd" hidden>
+                        <div class="adm-pop__head">
+                            <strong>افزودن سریع</strong>
+                            <small>مستقیم به فرم ایجاد بروید</small>
+                        </div>
+                        <div class="adm-quickadd">
+                            {% for group in nav_groups %}{% for app in group.apps %}{% for model in app.models %}
+                            {% if model.add_url %}
+                            <a href="{{ model.add_url }}">
+                                <span class="adm-quickadd__icon"><svg aria-hidden="true"><use href="#i-{{ model.icon }}"/></svg></span>
+                                <span>{{ model.name }}</span>
+                            </a>
+                            {% endif %}
+                            {% endfor %}{% endfor %}{% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="adm-pop" data-pop>
+                    <button class="adm-iconbtn adm-iconbtn--dot" type="button" data-pop-toggle
+                            aria-expanded="false" aria-controls="adm-notifications" aria-label="اعلان‌ها">
+                        <svg aria-hidden="true"><use href="#i-bell"/></svg>
+                        {% if alerts.total %}<span class="adm-count">{{ alerts.total|ar_digits }}</span>{% endif %}
+                    </button>
+                    <div class="adm-pop__panel adm-notif" id="adm-notifications" hidden>
+                        <div class="adm-pop__head">
+                            <strong>اعلان‌ها</strong>
+                            <small>{{ alerts.total|ar_digits }} مورد نیازمند بررسی</small>
+                        </div>
+                        <div class="adm-notif__list">
+                            {% for item in alerts.items %}
+                            <a class="adm-notif__item{% if not item.count %} is-zero{% endif %}" href="{{ item.url }}">
+                                <span class="adm-notif__icon adm-tone--{{ item.tone }}"><svg aria-hidden="true"><use href="#i-{{ item.icon }}"/></svg></span>
+                                <span class="adm-notif__body">
+                                    <strong>{{ item.label }}</strong>
+                                    <small>{% if item.count %}برای بررسی کلیک کنید{% else %}موردی وجود ندارد{% endif %}</small>
+                                </span>
+                                <span class="adm-notif__count">{{ item.count|ar_digits }}</span>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <button class="adm-iconbtn" id="adm-theme" type="button" aria-label="تغییر پوسته روشن و تاریک">
+                    <svg class="adm-theme__moon" aria-hidden="true"><use href="#i-moon"/></svg>
+                    <svg class="adm-theme__sun" aria-hidden="true"><use href="#i-sun"/></svg>
+                </button>
+
+                <div class="adm-pop adm-usermenu" data-pop>
+                    <button class="adm-avatar-btn" type="button" data-pop-toggle
+                            aria-expanded="false" aria-controls="adm-usermenu" aria-label="منوی کاربر">
+                        <span class="adm-avatar" aria-hidden="true">{{ user.get_username|slice:":1"|upper }}</span>
+                        <span class="adm-avatar-btn__meta">
+                            <strong>{% firstof user.get_full_name user.get_username %}</strong>
+                            <small>{% if user.is_superuser %}مدیر فروشگاه{% else %}کاربر کارکنان{% endif %}</small>
+                        </span>
+                        <svg class="adm-avatar-btn__chev" aria-hidden="true"><use href="#i-chevron"/></svg>
+                    </button>
+                    <div class="adm-pop__panel adm-usermenu__panel" id="adm-usermenu" hidden>
+                        <div class="adm-usermenu__head">
+                            <span class="adm-avatar adm-avatar--lg" aria-hidden="true">{{ user.get_username|slice:":1"|upper }}</span>
+                            <span>
+                                <strong>{% firstof user.get_full_name user.get_username %}</strong>
+                                <small>{{ user.email|default:"—" }}</small>
+                            </span>
+                        </div>
+                        {% if site_url %}
+                        <a href="{{ site_url }}" class="adm-menulink" target="_blank" rel="noopener">
+                            <svg aria-hidden="true"><use href="#i-external"/></svg>{% translate 'View site' %}
+                        </a>
+                        {% endif %}
+                        {% if user.has_usable_password %}
+                        <a href="{% url 'admin:password_change' %}" class="adm-menulink">
+                            <svg aria-hidden="true"><use href="#i-key"/></svg>{% translate 'Change password' %}
+                        </a>
+                        {% endif %}
+                        <form method="post" action="{% url 'admin:logout' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="adm-menulink adm-menulink--danger">
+                                <svg aria-hidden="true"><use href="#i-logout"/></svg>{% translate 'Log out' %}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% block nav-global %}{% endblock %}
+        </header>
+        {% endblock %}
+        {% endif %}
+
+        <main id="content-start" class="adm-canvas" tabindex="-1">
+            {% block messages %}
+              {% if messages %}
+                <ul class="messagelist">{% for message in messages %}
+                  <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message|capfirst }}</li>
+                {% endfor %}</ul>
+              {% endif %}
+            {% endblock messages %}
+
+            <div id="content" class="{% block coltype %}colM{% endblock %}">
+              {% block pretitle %}{% endblock %}
+              {% block content_title %}{% if title %}<div class="adm-pagehead"><h1 class="adm-page-title">{{ title }}</h1></div>{% endif %}{% endblock %}
+              {% block content_subtitle %}{% if subtitle %}<h2 class="adm-page-subtitle">{{ subtitle }}</h2>{% endif %}{% endblock %}
+              {% block content %}
+                {% block object-tools %}{% endblock %}
+                {{ content }}
+              {% endblock %}
+              {% block sidebar %}{% endblock %}
+            </div>
+
+            {% block footer %}
+            <footer id="footer" class="adm-footer">
+                <span>آریو شاپ · پنل مدیریت · {% jalali_today %}</span>
+                <span class="adm-footer__dot" aria-hidden="true"></span>
+                <span>ساخته‌شده برای یک فروشگاه مرتب</span>
+            </footer>
+            {% endblock %}
+        </main>
+    </div>
+</div>
+
+<div class="adm-palette" id="adm-palette" role="dialog" aria-modal="true" aria-labelledby="adm-palette-title" hidden>
+    <div class="adm-palette__scrim" data-palette-close></div>
+    <div class="adm-palette__panel" role="document">
+        <div class="adm-palette__search">
+            <svg aria-hidden="true"><use href="#i-search"/></svg>
+            <input type="search" id="adm-palette-input" placeholder="جستجوی ماژول، صفحه یا مدل…"
+                   autocomplete="off" aria-controls="adm-palette-list" aria-describedby="adm-palette-title">
+            <kbd>Esc</kbd>
+        </div>
+        <p class="adm-palette__hint" id="adm-palette-title">برای رفتن به بخش موردنظر شروع به تایپ کنید</p>
+        <div class="adm-palette__list" id="adm-palette-list" role="listbox" aria-label="نتایج جستجو">
+            <a class="adm-palette__item" href="{% url 'admin:index' %}" data-palette-item data-search="داشبورد dashboard خانه خانه اصلی">
+                <span class="adm-palette__icon"><svg aria-hidden="true"><use href="#i-dashboard"/></svg></span>
+                <span class="adm-palette__text"><strong>داشبورد</strong><small>نمای کلی فروشگاه</small></span>
+                <svg class="adm-palette__go" aria-hidden="true"><use href="#i-chevron"/></svg>
+            </a>
+            {% for group in nav_groups %}{% for app in group.apps %}{% for model in app.models %}
+            {% if model.url %}
+            <a class="adm-palette__item" href="{{ model.url }}" data-palette-item
+               data-search="{{ model.name }} {{ model.object_name }} {{ app.title }} {{ group.label }}">
+                <span class="adm-palette__icon"><svg aria-hidden="true"><use href="#i-{{ model.icon }}"/></svg></span>
+                <span class="adm-palette__text"><strong>{{ model.name }}</strong><small>{{ app.title }}</small></span>
+                <svg class="adm-palette__go" aria-hidden="true"><use href="#i-chevron"/></svg>
+            </a>
+            {% endif %}
+            {% endfor %}{% endfor %}{% endfor %}
+        </div>
+        <p class="adm-palette__empty" id="adm-palette-empty" hidden>نتیجه‌ای پیدا نشد.</p>
+        <div class="adm-palette__foot">
+            <span><kbd>↑</kbd><kbd>↓</kbd> حرکت</span>
+            <span><kbd>Enter</kbd> باز کردن</span>
+            <span><kbd>Esc</kbd> بستن</span>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'admin/js/ario-admin.js' %}?v=2026-10-30a" defer></script>
+{% block extrabody %}{% endblock %}
+</body>
+</html>

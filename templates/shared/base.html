@@ -1,0 +1,117 @@
+{% load static %}<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#24101B">
+
+    <title>{% block title %}فروشگاه اینترنتی آریو شاپ{% endblock %}</title>
+    <meta name="description" content="{% block meta_description %}آریو شاپ، فروشگاه اینترنتی با انتخاب گسترده‌ای از محصولات اصل، ارسال سریع و پرداخت امن.{% endblock %}">
+    <meta name="keywords" content="{% block keywords %}فروشگاه اینترنتی, خرید آنلاین, آریو شاپ{% endblock %}">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="{% block canonical %}{{ request.build_absolute_uri }}{% endblock %}">
+
+    <!-- Open Graph / Twitter -->
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+    <meta property="og:site_name" content="آریو شاپ">
+    <meta property="og:locale" content="fa_IR">
+    <meta property="og:title" content="{% block og_title %}فروشگاه اینترنتی آریو شاپ{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}خرید آنلاین با بهترین قیمت، ارسال سریع و ضمانت اصالت کالا.{% endblock %}">
+    <meta property="og:image" content="{% block og_image %}{{ request.scheme }}://{{ request.get_host }}{% static 'assets/images/icons/apple-touch-icon.png' %}{% endblock %}">
+    <meta property="og:url" content="{{ request.build_absolute_uri }}">
+    <meta name="twitter:card" content="summary_large_image">
+
+    <meta name="apple-mobile-web-app-title" content="آریو شاپ">
+    <meta name="application-name" content="آریو شاپ">
+    <meta name="msapplication-TileColor" content="#3E1B2E">
+
+    {% comment %}
+        Runs before first paint: flags JS availability, restores the saved (or
+        system) colour scheme so there is no flash, and decides whether the
+        loader shows — once per session only.
+    {% endcomment %}
+    <script>
+    (function () {
+        var d = document.documentElement;
+        d.classList.add('ar-js');
+        var saved = null;
+        try { saved = localStorage.getItem('ar-theme'); } catch (e) {}
+        var dark = saved ? saved === 'dark'
+            : !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (dark) d.setAttribute('data-theme', 'dark');
+        try {
+            if (sessionStorage.getItem('ar-loaded') !== '1') d.classList.add('is-preloading');
+        } catch (e) {
+            d.classList.add('is-preloading');
+        }
+        /* if the external script never boots, never leave the page locked */
+        setTimeout(function () {
+            if (window.Ario) return;
+            d.classList.remove('is-preloading');
+            d.classList.add('is-preloaded');
+        }, 6000);
+    })();
+    </script>
+
+    {% include 'shared/style.html' %}
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body class="{% block body_class %}{% endblock %}">
+    {% include 'shared/preloader.html' %}
+
+    <a class="ar-skip" href="#main">پرش به محتوای اصلی</a>
+
+    <div id="ar-page">
+        {% include 'shared/navbar_modern.html' %}
+
+        <main id="main" class="ar-page-content" tabindex="-1">
+            {% block content %}{% endblock %}
+        </main>
+
+        {% include 'shared/footer.html' %}
+    </div>
+
+    {% include 'shared/nav_drawers.html' %}
+    {% block page_overlays %}{% endblock %}
+    <div class="ar-modal" id="ar-confirm" role="dialog" aria-modal="true"
+         aria-labelledby="ar-confirm-title" aria-hidden="true">
+        <div class="ar-modal__dialog ar-confirm">
+            <span class="ar-confirm__icon" aria-hidden="true"><i class="icon-info-circle"></i></span>
+            <h2 class="ar-confirm__title" id="ar-confirm-title">تأیید عملیات</h2>
+            <p class="ar-confirm__text" data-ar-confirm-text>آیا از انجام این کار مطمئن هستید؟</p>
+            <div class="ar-confirm__actions">
+                <button type="button" class="ar-btn ar-btn--outline" data-ar-close>انصراف</button>
+                <button type="button" class="ar-btn ar-btn--danger" data-ar-confirm-accept>بله، ادامه بده</button>
+            </div>
+        </div>
+    </div>
+    <div class="ar-overlay" id="ar-overlay" hidden></div>
+
+    <div class="ar-toasts" id="ar-toasts" aria-live="polite" aria-atomic="false">
+        {% for message in messages %}
+        <div class="ar-toast ar-toast--{% if message.tags == 'error' %}danger{% elif message.tags == 'warning' %}warning{% elif message.tags == 'info' %}info{% else %}success{% endif %}"
+             role="{% if message.tags == 'error' %}alert{% else %}status{% endif %}"
+             data-ar-toast data-duration="7000">
+            <span class="ar-toast__icon" aria-hidden="true">
+                {% if message.tags == 'error' %}<i class="icon-close"></i>{% elif message.tags == 'warning' or message.tags == 'info' %}<i class="icon-info-circle"></i>{% else %}<i class="icon-check"></i>{% endif %}
+            </span>
+            <div class="ar-toast__text">{{ message }}</div>
+            <button type="button" class="ar-toast__close" data-ar-toast-close aria-label="بستن پیام"><i class="icon-close" aria-hidden="true"></i></button>
+            <span class="ar-toast__progress" aria-hidden="true"></span>
+        </div>
+        {% endfor %}
+    </div>
+
+    <button id="scroll-top" type="button" aria-label="بازگشت به بالای صفحه">
+        <i class="icon-angle-up" aria-hidden="true"></i>
+    </button>
+
+    {% if site_settings.show_newsletter_popup %}{% include 'shared/newsletter_popup.html' %}{% endif %}
+
+    {% include 'shared/script.html' %}
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

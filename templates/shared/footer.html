@@ -1,0 +1,129 @@
+{% load static %}
+{% load number_tags %}
+
+<footer class="ar-footer">
+    <div class="ar-container">
+        <div class="ar-footer__grid">
+            <!-- brand + newsletter -->
+            <div class="ar-footer__cell ar-footer__cell--brand">
+                <a href="{% url 'index' %}" class="ar-brand" aria-label="آریو شاپ — صفحه اصلی">
+                    <span class="ar-brand__mark">{% include 'shared/logo_mark.html' %}</span>
+                    <span class="ar-brand__text">
+                        <span class="ar-brand__name">آریو شاپ</span>
+                        <span class="ar-brand__tag">ARIO SHOP</span>
+                    </span>
+                </a>
+                <p class="ar-footer__about">
+                    انتخاب دقیق، بسته‌بندی باوسواس و تجربه‌ای که به آن اعتماد می‌کنید.
+                    از تهران، برای همه ایران؛ همراه شما در خرید محصولات اصل.
+                </p>
+
+                <form class="ar-subscribe" action="{% url 'contact' %}" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="name" value="مشترک خبرنامه">
+                    <input type="hidden" name="subject" value="عضویت در خبرنامه">
+                    <input type="hidden" name="message" value="درخواست عضویت در خبرنامه آریو شاپ">
+                    <label class="ar-subscribe__label" for="arNewsletterEmail">عضویت در باشگاه آریو</label>
+                    <div class="ar-subscribe__field">
+                        <input id="arNewsletterEmail" type="email" name="email" placeholder="ایمیل شما" required autocomplete="email">
+                        <button type="submit">عضویت</button>
+                    </div>
+                    <span class="ar-subscribe__hint">از تخفیف‌ها و محصولات تازه باخبر شوید.</span>
+                </form>
+
+                <div class="ar-socials">
+                    {% if contact_info.instagram_url %}<a href="{{ contact_info.instagram_url }}" target="_blank" rel="noopener" aria-label="اینستاگرام"><i class="icon-instagram" aria-hidden="true"></i></a>{% endif %}
+                    {% if contact_info.facebook_url %}<a href="{{ contact_info.facebook_url }}" target="_blank" rel="noopener" aria-label="فیسبوک"><i class="icon-facebook-f" aria-hidden="true"></i></a>{% endif %}
+                    {% if contact_info.twitter_url %}<a href="{{ contact_info.twitter_url }}" target="_blank" rel="noopener" aria-label="توییتر"><i class="icon-twitter" aria-hidden="true"></i></a>{% endif %}
+                    {% if contact_info.youtube_url %}<a href="{{ contact_info.youtube_url }}" target="_blank" rel="noopener" aria-label="یوتیوب"><i class="icon-youtube" aria-hidden="true"></i></a>{% endif %}
+                    {% if contact_info.pinterest_url %}<a href="{{ contact_info.pinterest_url }}" target="_blank" rel="noopener" aria-label="پینترست"><i class="icon-pinterest" aria-hidden="true"></i></a>{% endif %}
+                    {% if not contact_info %}
+                    <a href="{% url 'contact' %}" aria-label="راه‌های ارتباطی"><i class="icon-telegram" aria-hidden="true"></i></a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- shop links -->
+            <div class="ar-footer__cell">
+                <h3 class="ar-footer__title">فروشگاه</h3>
+                <ul class="ar-footer__links">
+                    <li><a href="{% url 'products:list' %}">همه محصولات</a></li>
+                    {% for category in navbar_categories|slice:":4" %}
+                    <li><a href="{{ category.get_absolute_url }}">{{ category.name }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <!-- service links -->
+            <div class="ar-footer__cell">
+                <h3 class="ar-footer__title">خدمات</h3>
+                <ul class="ar-footer__links">
+                    <li><a href="{% url 'accounts:dashboard' %}">حساب کاربری</a></li>
+                    <li><a href="{% url 'accounts:orders' %}">پیگیری سفارش</a></li>
+                    <li><a href="{% url 'cart:detail' %}">سبد خرید</a></li>
+                    <li><a href="{% url 'contact' %}">تماس با ما</a></li>
+                </ul>
+            </div>
+
+            <!-- contact -->
+            <div class="ar-footer__cell">
+                <h3 class="ar-footer__title">تماس با آریو</h3>
+                <ul class="ar-contact-list">
+                    {% if contact_info.office_address %}
+                    <li><i class="icon-map-marker" aria-hidden="true"></i><span>{{ contact_info.office_address|fa_digits }}</span></li>
+                    {% endif %}
+                    {% if contact_info.phone1 %}
+                    <li><i class="icon-phone" aria-hidden="true"></i><a href="tel:{{ contact_info.phone1 }}" dir="ltr">{{ contact_info.phone1 }}</a></li>
+                    {% endif %}
+                    {% if contact_info.email %}
+                    <li><i class="icon-envelope" aria-hidden="true"></i><a href="mailto:{{ contact_info.email }}" dir="ltr">{{ contact_info.email }}</a></li>
+                    {% endif %}
+                    {% if not contact_info %}
+                    <li><i class="icon-map-marker" aria-hidden="true"></i><span>تهران، خیابان ولیعصر</span></li>
+                    <li><i class="icon-phone" aria-hidden="true"></i><span dir="ltr">۰۲۱ ۰۰۰ ۰۰۰ ۰۰</span></li>
+                    <li><i class="icon-envelope" aria-hidden="true"></i><span>support@arioshop.ir</span></li>
+                    {% endif %}
+                    <li><i class="icon-headphones" aria-hidden="true"></i><span>شنبه تا پنجشنبه، ۹ تا ۲۱</span></li>
+                </ul>
+            </div>
+
+            <!-- trust -->
+            <div class="ar-footer__cell ar-footer__cell--trust">
+                <ul class="ar-footer__trust">
+                    <li><i class="icon-truck" aria-hidden="true"></i> ارسال رایگان به سراسر ایران</li>
+                    <li><i class="icon-certificate" aria-hidden="true"></i> ضمانت اصالت کالا</li>
+                    <li><i class="icon-rotate-left" aria-hidden="true"></i> بازگشت ۷ روزه</li>
+                    <li><i class="icon-check-circle-o" aria-hidden="true"></i> پرداخت امن</li>
+                </ul>
+            </div>
+
+            <!-- story -->
+            <div class="ar-footer__cell">
+                <h3 class="ar-footer__title">داستان آریو</h3>
+                <ul class="ar-footer__links">
+                    <li><a href="{% url 'AboutUs_Module:about' %}">درباره ما</a></li>
+                    <li><a href="{% url 'contact' %}">تماس با ما</a></li>
+                    <li><a href="{% url 'products:list' %}">همه محصولات</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- bottom bar -->
+        <div class="ar-footer__bottom">
+            <p style="margin:0">© آریو شاپ — تمامی حقوق برای این فروشگاه محفوظ است.</p>
+
+            <ul class="ar-footer__legal">
+                <li><a href="{% url 'AboutUs_Module:about' %}">درباره ما</a></li>
+                <li><a href="{% url 'contact' %}">تماس با ما</a></li>
+            </ul>
+
+            <div class="ar-footer__badges" aria-label="درگاه‌های پرداخت">
+                <span class="ar-footer__badge">شاپرک</span>
+                <span class="ar-footer__badge">زرین‌پال</span>
+                <span class="ar-footer__badge">ای‌نماد</span>
+            </div>
+        </div>
+
+        <div class="ar-footer__wordmark" aria-hidden="true">ARIO</div>
+    </div>
+</footer>

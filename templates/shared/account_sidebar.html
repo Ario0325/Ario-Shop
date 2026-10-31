@@ -1,0 +1,48 @@
+{% comment %}
+    Account sidebar. Pass `active` with one of: profile | orders | comments.
+{% endcomment %}
+<aside class="ar-account__nav" aria-label="منوی حساب کاربری">
+    <div class="ar-userbox">
+        <span class="ar-userbox__avatar" aria-hidden="true">
+            {{ user.get_full_name|default:user.get_username|slice:":1" }}
+        </span>
+        <div>
+            <div class="ar-userbox__name">{{ user.get_full_name|default:user.get_username }}</div>
+            <div class="ar-userbox__meta">{{ user.email|default:"عضو آریو شاپ" }}</div>
+        </div>
+    </div>
+
+    <ul class="ar-account__links">
+        <li>
+            <a class="ar-account__link {% if active == 'profile' %}is-active{% endif %}"
+               href="{% url 'accounts:dashboard' %}" {% if active == 'profile' %}aria-current="page"{% endif %}>
+                <i class="icon-user" aria-hidden="true"></i> اطلاعات حساب
+            </a>
+        </li>
+        <li>
+            <a class="ar-account__link {% if active == 'orders' %}is-active{% endif %}"
+               href="{% url 'accounts:orders' %}" {% if active == 'orders' %}aria-current="page"{% endif %}>
+                <i class="icon-shopping-bag" aria-hidden="true"></i> سفارش‌های من
+            </a>
+        </li>
+        <li>
+            <a class="ar-account__link {% if active == 'comments' %}is-active{% endif %}"
+               href="{% url 'accounts:comments' %}" {% if active == 'comments' %}aria-current="page"{% endif %}>
+                <i class="icon-comment-o" aria-hidden="true"></i> نظرات من
+            </a>
+        </li>
+        <li>
+            <a class="ar-account__link" href="{% url 'cart:detail' %}">
+                <i class="icon-shopping-cart" aria-hidden="true"></i> سبد خرید
+            </a>
+        </li>
+        <li>
+            <form action="{% url 'accounts:logout' %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="ar-account__link ar-account__link--logout">
+                    <i class="icon-arrow-left" aria-hidden="true"></i> خروج از حساب
+                </button>
+            </form>
+        </li>
+    </ul>
+</aside>

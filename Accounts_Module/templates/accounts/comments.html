@@ -1,0 +1,84 @@
+{% extends 'shared/base.html' %}
+{% load static %}
+{% load persian_date_tags %}
+{% load number_tags %}
+
+{% block title %}نظرات من | آریو شاپ{% endblock %}
+
+{% block content %}
+{% url 'products:list' as shop_url %}
+<div class="ar-container">
+    {% include 'shared/page_head.html' with title="نظرات من" desc="دیدگاه‌هایی که برای محصولات آریو شاپ ثبت کرده‌اید." eyebrow="حساب من" meta=page_obj.paginator.count|ar_digits|add:" نظر" %}
+</div>
+
+<div class="ar-container">
+    <div class="ar-account">
+        {% include 'shared/account_sidebar.html' with active='comments' %}
+
+        <div class="ar-account__main">
+            {% if reviews %}
+            <div class="ar-stack">
+                {% for review in reviews %}
+                <article class="ar-review">
+                    <div class="ar-review__head">
+                        <div class="ar-review__who">
+                            {% if review.product %}
+                            <a class="ar-review__media" href="{{ review.product.get_absolute_url }}" tabindex="-1" aria-hidden="true">
+                                {% if review.product.images.all.0 %}
+                                <img src="{{ review.product.images.all.0.image.url }}" alt=""
+                                     loading="lazy" decoding="async" width="54" height="64">
+                                {% else %}
+                                <img src="{% static 'assets/images/v2/placeholder-product.webp' %}" alt=""
+                                     loading="lazy" decoding="async" width="54" height="64">
+                                {% endif %}
+                            </a>
+                            {% endif %}
+
+                            <div>
+                                <div class="ar-review__product">
+                                    {% if review.product %}
+                                    <a href="{{ review.product.get_absolute_url }}">{{ review.product.name }}</a>
+                                    {% else %}
+                                    محصول حذف‌شده
+                                    {% endif %}
+                                </div>
+                                <span class="ar-review__date">{{ review.created_at|to_persian_date|fa_digits }}</span>
+                            </div>
+                        </div>
+
+                        {% if review.is_approved %}
+                        <span class="ar-badge ar-badge--success"><i class="icon-check" aria-hidden="true"></i> تأیید شده</span>
+                        {% else %}
+                        <span class="ar-badge ar-badge--warning"><i class="icon-clock" aria-hidden="true"></i> در انتظار تأیید</span>
+                        {% endif %}
+                    </div>
+
+                    <span class="ar-stars mt-2" role="img" aria-label="امتیاز {{ review.rating|ar_digits }} از ۵">
+                        {% for i in "12345" %}
+                            {% if forloop.counter <= review.rating %}
+                            <i class="icon-star" aria-hidden="true"></i>
+                            {% else %}
+                            <i class="icon-star-o" aria-hidden="true"></i>
+                            {% endif %}
+                        {% endfor %}
+                        <span class="ar-stars__count">{{ review.rating|ar_digits }} از ۵</span>
+                    </span>
+
+                    {% if review.title %}
+                    <div class="ar-review__title">{{ review.title }}</div>
+                    {% endif %}
+                    <p class="ar-review__body">{{ review.comment }}</p>
+                </article>
+                {% endfor %}
+            </div>
+
+            {% include 'shared/pagination.html' %}
+            {% else %}
+            <div class="ar-account__card">
+                {% include 'shared/empty_state.html' with title="هنوز نظری ثبت نکرده‌اید" text="پس از خرید، تجربه خود را برای دیگران بنویسید." icon="icon-comment" action_url=shop_url action_label="مشاهده محصولات" %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

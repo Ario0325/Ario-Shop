@@ -1,0 +1,29 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{% if title %}{{ title }} · {% endif %}آریو شاپ · پنل مدیریت{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link rel="preload" href="{% static 'assets/fonts/vazir-font-v16.1.0/Vazir.woff2' %}" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="{% static 'assets/fonts/vazir-font-v16.1.0/Vazir-Bold.woff2' %}" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="{% static 'assets/fonts/vazir-font-v16.1.0/Vazir-Medium.woff2' %}" as="font" type="font/woff2" crossorigin>
+<link rel="icon" href="{% static 'assets/images/icons/favicon-32x32.png' %}" sizes="32x32">
+<link rel="icon" href="{% static 'assets/images/icons/favicon.ico' %}">
+<meta name="theme-color" content="#F7F1EA">
+{% endblock %}
+
+{% block branding %}
+<a href="{% url 'admin:index' %}" class="adm-brand" aria-label="آریو شاپ">
+    <span class="adm-brand__mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false">
+            <path d="M6.4 18.6 12 5.4l5.6 13.2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M9 14.2h6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+        </svg>
+    </span>
+    <span class="adm-brand__text">
+        <strong>آریو شاپ</strong>
+        <small>ATELIER · پنل مدیریت</small>
+    </span>
+</a>
+{% endblock %}

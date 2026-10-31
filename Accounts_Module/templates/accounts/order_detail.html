@@ -1,0 +1,228 @@
+{% extends 'shared/base.html' %}
+{% load static %}
+{% load persian_date_tags %}
+{% load number_tags %}
+
+{% block title %}جزئیات سفارش {{ order.order_number }} | آریو شاپ{% endblock %}
+
+{% block content %}
+{% url 'accounts:orders' as orders_url %}
+<div class="ar-container">
+    <nav aria-label="مسیر صفحه">
+        <ol class="ar-crumbs">
+            <li><a href="{% url 'index' %}">خانه</a></li>
+            <li><a href="{{ orders_url }}">سفارش‌های من</a></li>
+            <li><span aria-current="page"><span dir="ltr">#{{ order.order_number }}</span></span></li>
+        </ol>
+    </nav>
+
+    <div class="ar-pagehead">
+        <div>
+            <span class="ar-eyebrow">سفارش من</span>
+            <h1 class="ar-pagehead__title">سفارش <span dir="ltr">#{{ order.order_number }}</span></h1>
+            <p class="ar-pagehead__desc">ثبت‌شده در {{ order.created_at|to_persian_date|fa_digits }}</p>
+        </div>
+        <div class="ar-pagehead__meta">
+            {% if order.status == 'pending' %}
+            <span class="ar-badge ar-badge--warning">در انتظار پرداخت</span>
+            {% elif order.status == 'paid' %}
+            <span class="ar-badge ar-badge--success">پرداخت شده</span>
+            {% elif order.status == 'processing' %}
+            <span class="ar-badge ar-badge--info">در حال پردازش</span>
+            {% elif order.status == 'shipped' %}
+            <span class="ar-badge ar-badge--gold">ارسال شده</span>
+            {% elif order.status == 'delivered' %}
+            <span class="ar-badge ar-badge--success">تحویل داده شده</span>
+            {% elif order.status == 'cancelled' %}
+            <span class="ar-badge ar-badge--danger">لغو شده</span>
+            {% else %}
+            <span class="ar-badge">{{ order.get_status_display }}</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="ar-container">
+    <div class="ar-orderdetail">
+        <div class="ar-stack ar-stack--lg">
+            <section class="ar-account__card">
+                <div class="ar-account__cardhead">
+                    <div>
+                        <h2 class="ar-account__cardtitle"><i class="icon-shopping-bag" aria-hidden="true"></i> محصولات سفارش</h2>
+                        <p class="ar-account__carddesc">{{ order.items.count|ar_digits }} کالا در این سفارش</p>
+                    </div>
+                </div>
+
+                <div class="ar-order-items">
+                    {% for item in order.items.all %}
+                    <div class="ar-order-item">
+                        <span class="ar-order-item__img">
+                            {% if item.product and item.product.images.all.0 %}
+                            <img src="{{ item.product.images.all.0.image.url }}" alt="{{ item.product_name }}"
+                                 loading="lazy" decoding="async" width="46" height="56">
+                            {% else %}
+                            <img src="{% static 'assets/images/v2/placeholder-product.webp' %}" alt=""
+                                 loading="lazy" decoding="async" width="46" height="56">
+                            {% endif %}
+                        </span>
+                        <div class="ar-order-item__name">
+                            {% if item.product %}
+                            <a href="{{ item.product.get_absolute_url }}"><b>{{ item.product_name }}</b></a>
+                            {% else %}
+                            <b>{{ item.product_name }}</b>
+                            {% endif %}
+                            <span>{{ item.quantity|ar_digits }} عدد × {{ item.price|toman }}</span>
+                        </div>
+                        <span class="ar-order-item__price">{{ item.total|toman }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section class="ar-account__card">
+                <div class="ar-account__cardhead">
+                    <div>
+                        <h2 class="ar-account__cardtitle"><i class="icon-truck" aria-hidden="true"></i> اطلاعات ارسال</h2>
+                        <p class="ar-account__carddesc">مرسوله به این مشخصات تحویل داده می‌شود.</p>
+                    </div>
+                </div>
+
+                <div class="ar-facts">
+                    <div class="ar-facts__item">
+                        <span>نام گیرنده</span>
+                        <b>{{ order.full_name }}</b>
+                    </div>
+                    <div class="ar-facts__item">
+                        <span>شماره تماس</span>
+                        <b dir="ltr">{{ order.phone }}</b>
+                    </div>
+                    {% if order.email %}
+                    <div class="ar-facts__item">
+                        <span>ایمیل</span>
+                        <b dir="ltr">{{ order.email }}</b>
+                    </div>
+                    {% endif %}
+                    {% if order.city %}
+                    <div class="ar-facts__item">
+                        <span>شهر</span>
+                        <b>{{ order.city }}</b>
+                    </div>
+                    {% endif %}
+                    {% if order.postal_code %}
+                    <div class="ar-facts__item">
+                        <span>کد پستی</span>
+                        <b dir="ltr">{{ order.postal_code }}</b>
+                    </div>
+                    {% endif %}
+                    <div class="ar-facts__item ar-facts__item--full">
+                        <span>آدرس</span>
+                        <b>{{ order.address }}</b>
+                    </div>
+                </div>
+            </section>
+
+            <section class="ar-account__card">
+                <div class="ar-account__cardhead">
+                    <div>
+                        <h2 class="ar-account__cardtitle"><i class="icon-clock" aria-hidden="true"></i> وضعیت سفارش</h2>
+                        <p class="ar-account__carddesc">مسیر پیشرفت سفارش شما از ثبت تا تحویل.</p>
+                    </div>
+                </div>
+
+                <div class="ar-timeline">
+                    <div class="ar-tl is-done">
+                        <div class="ar-tl__title">ثبت سفارش</div>
+                        <div class="ar-tl__date">{{ order.created_at|to_persian_date|fa_digits }}</div>
+                    </div>
+                    <div class="ar-tl{% if order.status == 'pending' %} is-current{% elif order.status == 'paid' or order.status == 'processing' or order.status == 'shipped' or order.status == 'delivered' %} is-done{% endif %}">
+                        <div class="ar-tl__title">پرداخت</div>
+                    </div>
+                    <div class="ar-tl{% if order.status == 'paid' or order.status == 'processing' %} is-current{% elif order.status == 'shipped' or order.status == 'delivered' %} is-done{% endif %}">
+                        <div class="ar-tl__title">پردازش</div>
+                    </div>
+                    <div class="ar-tl{% if order.status == 'shipped' %} is-current{% elif order.status == 'delivered' %} is-done{% endif %}">
+                        <div class="ar-tl__title">ارسال</div>
+                    </div>
+                    <div class="ar-tl{% if order.status == 'delivered' %} is-current{% endif %}">
+                        <div class="ar-tl__title">تحویل</div>
+                    </div>
+                    {% if order.status == 'cancelled' %}
+                    <div class="ar-tl ar-tl--danger is-current">
+                        <div class="ar-tl__title">لغو شده</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </section>
+        </div>
+
+        <aside class="ar-cartaside">
+            <div class="ar-summary">
+                <h2 class="ar-summary__title"><i class="icon-th-list" aria-hidden="true"></i> خلاصه پرداخت</h2>
+
+                <div class="ar-summary__row">
+                    <span>جمع کالاها</span>
+                    <b>{{ order.subtotal|toman }}</b>
+                </div>
+                {% if order.discount_amount > 0 %}
+                <div class="ar-summary__row ar-summary__row--off">
+                    <span>تخفیف{% if order.discount_code %} ({{ order.discount_code.code }}){% endif %}</span>
+                    <b>{{ order.discount_amount|toman }}</b>
+                </div>
+                {% endif %}
+                <div class="ar-summary__row">
+                    <span>هزینه ارسال</span>
+                    {% if order.shipping_cost > 0 %}
+                    <b>{{ order.shipping_cost|toman }}</b>
+                    {% else %}
+                    <b>رایگان</b>
+                    {% endif %}
+                </div>
+                {% if order.tax > 0 %}
+                <div class="ar-summary__row">
+                    <span>مالیات</span>
+                    <b>{{ order.tax|toman }}</b>
+                </div>
+                {% endif %}
+
+                <div class="ar-summary__total">
+                    <span>مبلغ کل</span>
+                    <b>{{ order.total|toman }}</b>
+                </div>
+
+                <div class="ar-actions">
+                    {% if order.status == 'pending' %}
+                    <a href="{% url 'cart:payment' order.id %}" class="ar-btn ar-btn--gold ar-btn--block">
+                        <i class="icon-credit-card" aria-hidden="true"></i> پرداخت سفارش
+                    </a>
+                    {% endif %}
+
+                    {% if order.status != 'pending' %}
+                    <a href="{% url 'cart:invoice' order.id %}" class="ar-btn ar-btn--outline ar-btn--block">
+                        <i class="icon-th-list" aria-hidden="true"></i> مشاهده فاکتور
+                    </a>
+                    {% endif %}
+
+                    {% if order.status == 'pending' or order.status == 'paid' or order.status == 'processing' %}
+                    <form method="post" action="{% url 'accounts:order_cancel' order.id %}"
+                          data-ar-confirm="سفارش #{{ order.order_number }} لغو شود؟ موجودی کالاها به انبار برمی‌گردد و این کار قابل بازگشت نیست.">
+                        {% csrf_token %}
+                        <button type="submit" class="ar-btn ar-btn--danger ar-btn--block">
+                            <i class="icon-close" aria-hidden="true"></i> لغو سفارش
+                        </button>
+                    </form>
+                    {% endif %}
+
+                    <a href="{{ orders_url }}" class="ar-btn ar-btn--soft ar-btn--block">
+                        <i class="icon-arrow-right" aria-hidden="true"></i> بازگشت به سفارش‌ها
+                    </a>
+                </div>
+
+                <p class="ar-summary__hint">
+                    <i class="icon-shield" aria-hidden="true"></i>
+                    سؤال دارید؟ پشتیبانی آریو شاپ کنار شماست.
+                </p>
+            </div>
+        </aside>
+    </div>
+</div>
+{% endblock %}

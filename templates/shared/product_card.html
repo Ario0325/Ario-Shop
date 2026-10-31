@@ -1,0 +1,102 @@
+{% load static %}
+{% load number_tags %}
+{% comment %}
+    Reusable product card. Expects `product` in context.
+{% endcomment %}
+{% with imgs=product.images.all %}
+<article class="ar-product">
+    <div class="product-media">
+        {% if not product.is_available or product.stock <= 0 %}
+        <span class="ar-product__label label-out">ناموجود</span>
+        {% elif product.label %}
+        <span class="ar-product__label label-{{ product.label }}">{{ product.get_label_display }}</span>
+        {% elif product.discount_percentage %}
+        <span class="ar-product__label label-sale">{{ product.discount_percentage|ar_digits }}٪ تخفیف</span>
+        {% endif %}
+
+        <a href="{{ product.get_absolute_url }}" aria-label="{{ product.name }}">
+            {% with imgs.0 as main %}
+            {% if main %}
+            <img class="product-image" src="{{ main.image.url }}" alt="{{ main.alt_text|default:product.name }}"
+                 loading="lazy" decoding="async" width="400" height="500">
+            {% else %}
+            <img class="product-image" src="{% static 'assets/images/v2/placeholder-product.webp' %}" alt="{{ product.name }}"
+                 loading="lazy" decoding="async" width="400" height="500">
+            {% endif %}
+            {% endwith %}
+            {% if imgs.1 %}
+            <img class="product-image-hover" src="{{ imgs.1.image.url }}" alt=""
+                 aria-hidden="true" loading="lazy" decoding="async" width="400" height="500">
+            {% endif %}
+        </a>
+
+        <div class="product-action-vertical">
+            <a href="{{ product.get_absolute_url }}" class="btn-product-icon"
+               title="مشاهده جزئیات" aria-label="مشاهده {{ product.name }}">
+                <i class="icon-search-plus" aria-hidden="true"></i>
+            </a>
+        </div>
+
+        <div class="product-action">
+            {% if product.is_available and product.stock > 0 %}
+            <form action="{% url 'cart:add' product.id %}" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="quantity" value="1">
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <button class="btn-product" type="submit">
+                    <i class="icon-shopping-cart" aria-hidden="true"></i>
+                    <span>افزودن به سبد</span>
+                </button>
+            </form>
+            {% else %}
+            <a class="btn-product" href="{{ product.get_absolute_url }}">
+                <i class="icon-info-circle" aria-hidden="true"></i>
+                <span>مشاهده محصول</span>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="product-body">
+        {% if product.category %}
+        <div class="product-cat">
+            <a href="{{ product.category.get_absolute_url }}">{{ product.category.name }}</a>
+        </div>
+        {% endif %}
+
+        <h3 class="product-title">
+            <a href="{{ product.get_absolute_url }}">{{ product.name }}</a>
+        </h3>
+
+        {% if product.get_rating_percentage %}
+        <div class="ratings-container">
+            <span class="ratings" role="img" aria-label="امتیاز {{ product.get_rating_percentage|ar_digits }} درصد">
+                <span class="ratings-val" style="width: {{ product.get_rating_percentage }}%;"></span>
+            </span>
+        </div>
+        {% endif %}
+
+        <div class="product-price">
+            {% if not product.is_available or product.stock <= 0 %}
+                <span class="out-price">{{ product.price|toman }}</span>
+            {% elif product.old_price %}
+                <span class="new-price">{{ product.price|toman }}</span>
+                <span class="old-price">{{ product.old_price|toman }}</span>
+            {% else %}
+                <span class="new-price">{{ product.price|toman }}</span>
+            {% endif %}
+        </div>
+
+        {% if product.colors.exists %}
+        <div class="product-nav product-nav-dots" aria-label="رنگ‌های موجود">
+            {% for color in product.colors.all|slice:":4" %}
+            <a href="{{ product.get_absolute_url }}" {% if forloop.first %}class="active"{% endif %}
+               style="background: {{ color.code }};" title="{{ color.name }}">
+                <span class="ar-sr-only">{{ color.name }}</span>
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</article>
+{% endwith %}

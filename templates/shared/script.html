@@ -1,0 +1,11 @@
+{% load static %}
+    <script src="{% static 'assets/js/ar.js' %}?v=2026-10-30e" defer></script>
+
+    <script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+            navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                .catch(function (err) { console.warn('SW registration failed:', err); });
+        });
+    }
+    </script>

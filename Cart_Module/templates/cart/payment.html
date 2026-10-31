@@ -1,0 +1,147 @@
+{% extends 'shared/base.html' %}
+{% load static %}
+{% load number_tags %}
+
+{% block title %}پرداخت سفارش {{ order.order_number }} | آریو شاپ{% endblock %}
+
+{% block body_class %}no-bottomnav{% endblock %}
+
+{% block content %}
+{% url 'cart:detail' as cart_url %}
+<div class="ar-container">
+    {% include 'shared/breadcrumbs.html' with crumb1_title="سبد خرید" crumb1_url=cart_url crumb2_title="پرداخت" crumb_last=order.order_number crumb_last_ltr=1 %}
+    {% include 'shared/page_head.html' with title="پرداخت سفارش" desc="اطلاعات سفارش را بررسی کنید و پرداخت را نهایی کنید." eyebrow="مرحله ۳ از ۳" meta=order.total|toman %}
+</div>
+
+<div class="ar-container page-content">
+    <ol class="ar-cartsteps" aria-label="مراحل خرید">
+        <li class="ar-step is-done">
+            <span class="ar-step__dot"><i class="icon-check" aria-hidden="true"></i></span>
+            <span>سبد خرید</span>
+        </li>
+        <li class="ar-step__sep" aria-hidden="true"></li>
+        <li class="ar-step is-done">
+            <span class="ar-step__dot"><i class="icon-check" aria-hidden="true"></i></span>
+            <span>اطلاعات ارسال</span>
+        </li>
+        <li class="ar-step__sep" aria-hidden="true"></li>
+        <li class="ar-step is-current" aria-current="step">
+            <span class="ar-step__dot">۳</span>
+            <span>پرداخت</span>
+        </li>
+    </ol>
+
+    <div class="ar-checkout">
+        <div class="ar-stack">
+            <section class="ar-paycard" aria-labelledby="order-items-title">
+                <h2 class="ar-paycard__title" id="order-items-title">
+                    <i class="icon-th-list" aria-hidden="true"></i>
+                    اقلام سفارش
+                </h2>
+
+                <div class="ar-paylist">
+                    {% for item in order.items.all %}
+                    <div class="ar-payrow">
+                        <div class="ar-payrow__name">
+                            <i class="icon-shopping-bag" aria-hidden="true"></i>
+                            <span>{{ item.product_name }}</span>
+                            <span class="ar-payrow__qty">{{ item.quantity|ar_digits }} × {{ item.price|toman }}</span>
+                        </div>
+                        <b>{{ item.total|toman }}</b>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section class="ar-paycard" aria-labelledby="gateway-title">
+                <h2 class="ar-paycard__title" id="gateway-title">
+                    <i class="icon-credit-card" aria-hidden="true"></i>
+                    روش پرداخت
+                </h2>
+
+                <div class="ar-gateway">
+                    <span class="ar-gateway__icon"><i class="icon-credit-card" aria-hidden="true"></i></span>
+                    <div>
+                        <div class="ar-gateway__title">درگاه پرداخت امن بانکی</div>
+                        <p class="ar-gateway__text">انتقال به درگاه امن بانک ملت؛ اطلاعات کارت شما نزد آریو شاپ ذخیره نمی‌شود.</p>
+                    </div>
+                    <i class="icon-check-circle-o ar-gateway__check" aria-hidden="true"></i>
+                </div>
+
+                <p class="ar-hint mt-3">
+                    <i class="icon-info-circle" aria-hidden="true"></i>
+                    این نسخه آزمایشی است و مبلغی از حساب شما کسر نمی‌شود؛ پس از تأیید، فاکتور سفارش صادر می‌شود.
+                </p>
+            </section>
+        </div>
+
+        <aside class="ar-cartaside">
+            <section class="ar-summary" aria-labelledby="pay-summary-title">
+                <h2 class="ar-summary__title" id="pay-summary-title">
+                    <i class="icon-credit-card" aria-hidden="true"></i>
+                    خلاصه پرداخت
+                </h2>
+
+                {% if order.subtotal and order.subtotal != order.total %}
+                <div class="ar-summary__row">
+                    <span>جمع سفارش</span>
+                    <b>{{ order.subtotal|toman }}</b>
+                </div>
+                {% endif %}
+
+                {% if order.discount_amount and order.discount_amount > 0 %}
+                <div class="ar-summary__row ar-summary__row--off">
+                    <span>
+                        <i class="icon-tag" aria-hidden="true"></i>
+                        تخفیف{% if order.discount_code %} ({{ order.discount_code.code }}){% endif %}
+                    </span>
+                    <b>− {{ order.discount_amount|toman }}</b>
+                </div>
+                {% endif %}
+
+                <div class="ar-summary__row">
+                    <span>هزینه ارسال</span>
+                    <b>{% if order.shipping_cost %}{{ order.shipping_cost|toman }}{% else %}رایگان{% endif %}</b>
+                </div>
+
+                {% if order.tax and order.tax > 0 %}
+                <div class="ar-summary__row">
+                    <span>مالیات بر ارزش افزوده</span>
+                    <b>{{ order.tax|toman }}</b>
+                </div>
+                {% endif %}
+
+                <div class="ar-summary__total">
+                    <span>مبلغ قابل پرداخت</span>
+                    <b>{{ order.total|toman }}</b>
+                </div>
+
+                {% if order.status == 'paid' %}
+                <a href="{% url 'cart:invoice' order.id %}" class="ar-btn ar-btn--primary ar-btn--block ar-btn--lg ar-summary__cta">
+                    <i class="icon-check-circle-o" aria-hidden="true"></i>
+                    مشاهده فاکتور
+                </a>
+                {% else %}
+                <form method="post" action="{% url 'cart:payment' order.id %}" data-ar-lock class="ar-summary__cta">
+                    {% csrf_token %}
+                    <button type="submit" class="ar-btn ar-btn--gold ar-btn--block ar-btn--lg">
+                        <i class="icon-lock" aria-hidden="true"></i>
+                        پرداخت و تکمیل سفارش
+                    </button>
+                </form>
+                {% endif %}
+
+                <p class="ar-summary__hint">
+                    <i class="icon-shield" aria-hidden="true"></i>
+                    پرداخت امن و رمزنگاری‌شده
+                </p>
+            </section>
+
+            <a class="ar-btn ar-btn--outline ar-btn--block" href="{% url 'cart:detail' %}">
+                <i class="icon-long-arrow-right" aria-hidden="true"></i>
+                بازگشت به سبد خرید
+            </a>
+        </aside>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,93 @@
+{% extends 'shared/base.html' %}
+{% load i18n %}
+{% load static %}
+{% load number_tags %}
+
+{% block title %}تأیید ایمیل | آریو شاپ{% endblock %}
+
+{% block content %}
+<div class="ar-container">
+    <nav aria-label="مسیر صفحه">
+        <ol class="ar-crumbs">
+            <li><a href="{% url 'index' %}">خانه</a></li>
+            <li><a href="{% url 'accounts:login_register' %}">ورود و ثبت‌نام</a></li>
+            <li><span aria-current="page">تأیید ایمیل</span></li>
+        </ol>
+    </nav>
+
+    <div class="ar-auth">
+        <div class="ar-auth__main">
+            <div class="ar-auth__inner">
+                <div class="ar-auth__head">
+                    <span class="ar-auth__ico" aria-hidden="true"><i class="icon-envelope"></i></span>
+                    <h1 class="ar-auth__title">ایمیل خود را تأیید کنید</h1>
+                    <p class="ar-auth__sub">
+                        کد ۶ رقمی به <strong dir="ltr">{{ email }}</strong> ارسال شد.
+                        آن را وارد کنید تا حساب شما فعال شود.
+                    </p>
+                </div>
+
+                {% if expired %}
+                <div class="alert alert-warning" role="alert">
+                    <i class="icon-info-circle" aria-hidden="true"></i>
+                    کد تأیید منقضی شده است. لطفاً کد جدید دریافت کنید.
+                </div>
+                {% endif %}
+
+                <form class="ar-auth__form" method="post" data-ar-validate
+                      action="{% url 'accounts:verify_email' %}{% if email %}?email={{ email|urlencode }}{% endif %}"
+                      novalidate>
+                    {% csrf_token %}
+
+                    <div class="ar-field">
+                        <label class="ar-js-only" for="otp-1">کد تأیید</label>
+                        <label class="ar-no-js-only" for="{{ form.code.id_for_label }}">کد تأیید</label>
+
+                        <div class="ar-otp" data-ar-otp data-otp-target="{{ form.code.id_for_label }}"
+                             role="group" aria-label="کد تأیید ۶ رقمی">
+                            {% for i in "123456" %}
+                            <input type="text" id="otp-{{ forloop.counter }}" maxlength="1"
+                                   inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code"
+                                   data-otp-digit aria-label="رقم {{ forloop.counter|ar_digits }}">
+                            {% endfor %}
+                        </div>
+
+                        <div class="ar-otp-native">{{ form.code }}</div>
+
+                        {% if form.code.errors %}
+                        <p class="ar-error">{{ form.code.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <button type="submit" class="ar-btn ar-btn--primary ar-btn--block ar-btn--lg" data-ar-submit>
+                        <i class="icon-check" aria-hidden="true"></i>
+                        تأیید و ورود
+                    </button>
+                </form>
+
+                <div class="ar-note">
+                    <i class="icon-info-circle" aria-hidden="true"></i>
+                    <span>اگر ایمیل را نمی‌بینید، پوشه <strong>اسپم / Junk</strong> را هم بررسی کنید.</span>
+                </div>
+
+                <div class="ar-auth__foot">
+                    <div class="ar-auth__resend">
+                        <form method="post" action="{% url 'accounts:resend_verification' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="email" value="{{ email }}">
+                            <button type="submit" class="ar-btn ar-btn--soft ar-btn--sm">
+                                <i class="icon-refresh" aria-hidden="true"></i> ارسال مجدد کد
+                            </button>
+                        </form>
+                    </div>
+                    <a href="{% url 'accounts:login_register' %}">
+                        <i class="icon-long-arrow-right" aria-hidden="true"></i> بازگشت به ورود
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        {% include 'shared/auth_aside.html' %}
+    </div>
+</div>
+{% endblock %}

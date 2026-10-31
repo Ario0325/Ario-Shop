@@ -1,0 +1,46 @@
+{% load static %}
+{% comment %}
+    Newsletter modal. ar.js opens it after a short delay (once per week after
+    dismissal). It posts to the contact endpoint, the only message sink in this
+    project, so the form carries the required hidden fields.
+{% endcomment %}
+<div class="ar-modal ar-newsletter" id="ar-promo" data-ar-promo data-delay="9000"
+     role="dialog" aria-modal="true" aria-labelledby="arPromoTitle" aria-hidden="true">
+    <div class="ar-modal__dialog">
+        <button class="ar-modal__close" type="button" data-ar-close aria-label="بستن">
+            <i class="icon-close" aria-hidden="true"></i>
+        </button>
+
+        <div class="ar-newsletter__media">
+            <img src="{% static 'assets/images/v2/promo-offer.webp' %}" alt="" width="1000" height="562"
+                 loading="lazy" decoding="async">
+        </div>
+
+        <div class="ar-newsletter__body">
+            <span class="ar-eyebrow">خبرنامه آریو شاپ</span>
+            <h3 id="arPromoTitle">۱۵٪ تخفیف اولین خرید</h3>
+            <p>ایمیل خود را وارد کنید تا کد تخفیف اولین خرید و تازه‌ترین پیشنهادهای آریو شاپ را برایتان بفرستیم.</p>
+
+            <form class="ar-newsletter__form" action="{% url 'contact' %}" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="name" value="مشترک خبرنامه">
+                <input type="hidden" name="subject" value="عضویت در خبرنامه">
+                <input type="hidden" name="message" value="درخواست عضویت در خبرنامه آریو شاپ">
+                <label for="arPromoEmail" class="ar-sr-only">ایمیل</label>
+                <input id="arPromoEmail" type="email" name="email" placeholder="ایمیل شما" required
+                       autocomplete="email" dir="ltr">
+                <button type="submit">دریافت کد</button>
+            </form>
+
+            <label class="ar-checkline" style="justify-content:center;margin-top:12px">
+                <input type="checkbox" data-ar-promo-hide>
+                <span>یک هفته نمایش نده</span>
+            </label>
+
+            <p class="ar-note" style="margin-top:14px;text-align:start">
+                <i class="icon-check-circle-o" aria-hidden="true"></i>
+                <span>بدون تبلیغات مزاحم؛ هر زمان بخواهید با یک کلیک لغو عضویت کنید.</span>
+            </p>
+        </div>
+    </div>
+</div>

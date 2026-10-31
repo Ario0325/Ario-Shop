@@ -1,0 +1,169 @@
+{% extends 'shared/base.html' %}
+{% load static %}
+
+{% block title %}تماس با ما | آریو شاپ{% endblock %}
+{% block meta_description %}راه‌های ارتباط با آریو شاپ؛ شماره تماس، ایمیل، آدرس دفتر و فرم ارسال پیام.{% endblock %}
+
+{% block content %}
+<div class="ar-container">
+    {% include 'shared/breadcrumbs.html' with crumb_last="تماس با ما" %}
+    {% include 'shared/page_head.html' with eyebrow="ارتباط با ما" title="تماس با ما" desc="سؤال، پیشنهاد یا پیگیری سفارش دارید؟ از راه‌های زیر با ما در ارتباط باشید." %}
+</div>
+
+<section class="ar-container ar-section--flush">
+    <div class="ar-contact">
+        <div class="ar-contact__form" data-ar-reveal>
+            <h2 class="ar-contact__title">برایمان پیام بفرستید</h2>
+            <p class="ar-contact__sub">
+                فرم زیر را پر کنید؛ کارشناسان ما در اولین فرصت به پیام شما پاسخ می‌دهند.
+            </p>
+
+            {% if form.errors %}
+            <div class="ar-note ar-note--danger mb-4" role="alert">
+                <i class="icon-info-circle" aria-hidden="true"></i>
+                <span>لطفاً خطاهای مشخص‌شده را برطرف کنید و دوباره ارسال کنید.</span>
+            </div>
+            {% endif %}
+
+            {% if form.non_field_errors %}
+            <div class="ar-note ar-note--danger mb-4" role="alert">
+                <i class="icon-info-circle" aria-hidden="true"></i>
+                <span>{% for error in form.non_field_errors %}{{ error }}{% endfor %}</span>
+            </div>
+            {% endif %}
+
+            <form action="{% url 'contact' %}" method="post" data-ar-validate novalidate>
+                {% csrf_token %}
+
+                <div class="ar-formgrid">
+                    <div class="ar-field{% if form.name.errors %} has-error{% endif %}">
+                        <label for="{{ form.name.id_for_label }}">
+                            نام و نام خانوادگی <span class="ar-req" aria-hidden="true">*</span>
+                        </label>
+                        {{ form.name }}
+                        {% for error in form.name.errors %}<span class="ar-error">{{ error }}</span>{% endfor %}
+                    </div>
+
+                    <div class="ar-field{% if form.email.errors %} has-error{% endif %}">
+                        <label for="{{ form.email.id_for_label }}">
+                            ایمیل <span class="ar-req" aria-hidden="true">*</span>
+                        </label>
+                        {{ form.email }}
+                        {% for error in form.email.errors %}<span class="ar-error">{{ error }}</span>{% endfor %}
+                    </div>
+
+                    <div class="ar-field{% if form.phone.errors %} has-error{% endif %}">
+                        <label for="{{ form.phone.id_for_label }}">شماره موبایل</label>
+                        {{ form.phone }}
+                        {% for error in form.phone.errors %}<span class="ar-error">{{ error }}</span>{% endfor %}
+                    </div>
+
+                    <div class="ar-field{% if form.subject.errors %} has-error{% endif %}">
+                        <label for="{{ form.subject.id_for_label }}">موضوع</label>
+                        {{ form.subject }}
+                        {% for error in form.subject.errors %}<span class="ar-error">{{ error }}</span>{% endfor %}
+                    </div>
+
+                    <div class="ar-field ar-field--full{% if form.message.errors %} has-error{% endif %}">
+                        <label for="{{ form.message.id_for_label }}">
+                            متن پیام <span class="ar-req" aria-hidden="true">*</span>
+                        </label>
+                        {{ form.message }}
+                        {% for error in form.message.errors %}<span class="ar-error">{{ error }}</span>{% endfor %}
+                    </div>
+                </div>
+
+                <div class="ar-contact__actions">
+                    <p class="ar-hint">
+                        اطلاعات شما فقط برای پاسخ به همین پیام استفاده می‌شود و در اختیار شخص دیگری قرار نمی‌گیرد.
+                    </p>
+                    <button type="submit" class="ar-btn ar-btn--primary ar-btn--lg">
+                        ارسال پیام <i class="icon-long-arrow-left" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <aside class="ar-contact__aside" aria-label="اطلاعات تماس" data-ar-reveal style="--ar-delay: 1">
+            {% if contact_info %}
+            <div class="ar-infos">
+                {% if contact_info.office_address %}
+                <div class="ar-info">
+                    <span class="ar-info__icon" aria-hidden="true"><i class="icon-map-marker"></i></span>
+                    <div>
+                        <span class="ar-info__label">آدرس دفتر</span>
+                        <span class="ar-info__value" data-ar-digitize>{{ contact_info.office_address|linebreaksbr }}</span>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if contact_info.phone1 or contact_info.phone2 %}
+                <div class="ar-info">
+                    <span class="ar-info__icon" aria-hidden="true"><i class="icon-phone"></i></span>
+                    <div>
+                        <span class="ar-info__label">شماره تماس</span>
+                        {% if contact_info.phone1 %}
+                        <a class="ar-info__value" href="tel:{{ contact_info.phone1 }}"><span dir="ltr">{{ contact_info.phone1 }}</span></a>
+                        {% endif %}
+                        {% if contact_info.phone2 %}
+                        <a class="ar-info__value" href="tel:{{ contact_info.phone2 }}"><span dir="ltr">{{ contact_info.phone2 }}</span></a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if contact_info.email %}
+                <div class="ar-info">
+                    <span class="ar-info__icon" aria-hidden="true"><i class="icon-envelope"></i></span>
+                    <div>
+                        <span class="ar-info__label">ایمیل</span>
+                        <a class="ar-info__value" href="mailto:{{ contact_info.email }}"><span dir="ltr">{{ contact_info.email }}</span></a>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="ar-info">
+                    <span class="ar-info__icon" aria-hidden="true"><i class="icon-clock-o"></i></span>
+                    <div>
+                        <span class="ar-info__label">ساعات پاسخ‌گویی</span>
+                        <span class="ar-info__value">شنبه تا پنجشنبه، ۹ تا ۲۱</span>
+                        <span class="ar-hint">پاسخ به فرم‌ها حداکثر تا ۲۴ ساعت کاری</span>
+                    </div>
+                </div>
+
+                {% if contact_info.instagram_url or contact_info.facebook_url or contact_info.twitter_url or contact_info.youtube_url or contact_info.pinterest_url %}
+                <div class="ar-info">
+                    <span class="ar-info__icon" aria-hidden="true"><i class="icon-instagram"></i></span>
+                    <div>
+                        <span class="ar-info__label">شبکه‌های اجتماعی</span>
+                        <div class="ar-socials ar-socials--light mt-2">
+                            {% if contact_info.instagram_url %}<a href="{{ contact_info.instagram_url }}" target="_blank" rel="noopener" aria-label="اینستاگرام"><i class="icon-instagram" aria-hidden="true"></i></a>{% endif %}
+                            {% if contact_info.facebook_url %}<a href="{{ contact_info.facebook_url }}" target="_blank" rel="noopener" aria-label="فیسبوک"><i class="icon-facebook-f" aria-hidden="true"></i></a>{% endif %}
+                            {% if contact_info.twitter_url %}<a href="{{ contact_info.twitter_url }}" target="_blank" rel="noopener" aria-label="توییتر"><i class="icon-twitter" aria-hidden="true"></i></a>{% endif %}
+                            {% if contact_info.youtube_url %}<a href="{{ contact_info.youtube_url }}" target="_blank" rel="noopener" aria-label="یوتیوب"><i class="icon-youtube" aria-hidden="true"></i></a>{% endif %}
+                            {% if contact_info.pinterest_url %}<a href="{{ contact_info.pinterest_url }}" target="_blank" rel="noopener" aria-label="پینترست"><i class="icon-pinterest" aria-hidden="true"></i></a>{% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if contact_info.map_embed %}
+            <div class="ar-map">
+                <div class="ar-map__fallback">
+                    <i class="icon-map-marker" aria-hidden="true"></i>
+                    <span>نقشه دفتر آریو شاپ</span>
+                </div>
+                {{ contact_info.map_embed|safe }}
+            </div>
+            {% endif %}
+            {% else %}
+            <div class="ar-note ar-note--info">
+                <i class="icon-info-circle" aria-hidden="true"></i>
+                <span>اطلاعات تماس دفتر هنوز ثبت نشده است. از فرم همین صفحه پیام بفرستید تا با شما تماس بگیریم.</span>
+            </div>
+            {% endif %}
+        </aside>
+    </div>
+</section>
+{% endblock %}

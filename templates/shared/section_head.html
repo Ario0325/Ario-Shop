@@ -1,0 +1,16 @@
+{% comment %}
+    Section heading with optional eyebrow, description and a «see all» link.
+    Pass: title, eyebrow, desc, more_url, more_text.
+{% endcomment %}
+<div class="ar-section-head">
+    <div class="ar-section-head__text">
+        {% if eyebrow %}<span class="ar-eyebrow">{{ eyebrow }}</span>{% endif %}
+        <h2 class="ar-section-title">{{ title }}</h2>
+        {% if desc %}<p class="ar-section-desc">{{ desc }}</p>{% endif %}
+    </div>
+    {% if more_url %}
+    <a class="ar-link-more" href="{{ more_url }}">
+        {{ more_text|default:"مشاهده همه" }} <i class="icon-long-arrow-left" aria-hidden="true"></i>
+    </a>
+    {% endif %}
+</div>

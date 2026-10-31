@@ -1,0 +1,188 @@
+{% extends 'shared/base.html' %}
+{% load static %}
+{% load number_tags %}
+
+{% block title %}سبد خرید | آریو شاپ{% endblock %}
+
+{% block body_class %}no-bottomnav{% endblock %}
+
+{% block content %}
+<div class="ar-container">
+    {% include 'shared/breadcrumbs.html' with crumb1_title="سبد خرید" crumb_last="مرحله ۱" %}
+    {% include 'shared/page_head.html' with title="سبد خرید" desc="اقلام انتخابی خود را بررسی کنید؛ در مرحله بعد اطلاعات ارسال و پرداخت را تکمیل می‌کنید." eyebrow="مرحله ۱ از ۳" meta=cart_items|length|ar_digits|add:" نوع کالا" %}
+</div>
+
+<div class="ar-container page-content">
+    <ol class="ar-cartsteps" aria-label="مراحل خرید">
+        <li class="ar-step is-current" aria-current="step">
+            <span class="ar-step__dot">۱</span>
+            <span>سبد خرید</span>
+        </li>
+        <li class="ar-step__sep" aria-hidden="true"></li>
+        <li class="ar-step">
+            <span class="ar-step__dot">۲</span>
+            <span>اطلاعات ارسال</span>
+        </li>
+        <li class="ar-step__sep" aria-hidden="true"></li>
+        <li class="ar-step">
+            <span class="ar-step__dot">۳</span>
+            <span>پرداخت</span>
+        </li>
+    </ol>
+
+    <div class="ar-cartlayout">
+        <div>
+            <form action="{% url 'cart:update' %}" method="post" data-ar-lock>
+                {% csrf_token %}
+
+                <div class="ar-cartlist">
+                    {% for item in cart_items %}
+                    <article class="ar-cartrow">
+                        <a class="ar-cartrow__media" href="{{ item.product.get_absolute_url }}" tabindex="-1" aria-hidden="true">
+                            {% with img=item.product.images.all.0 %}
+                            {% if img %}
+                            <img src="{{ img.image.url }}" alt="{{ item.product.name }}" width="104" height="130" loading="lazy" decoding="async">
+                            {% else %}
+                            <img src="{% static 'assets/images/v2/placeholder-product.webp' %}" alt="" width="104" height="130" loading="lazy" decoding="async">
+                            {% endif %}
+                            {% endwith %}
+                        </a>
+
+                        <div class="ar-cartrow__info">
+                            <a class="ar-cartrow__name" href="{{ item.product.get_absolute_url }}">{{ item.product.name }}</a>
+                            <div class="ar-cartrow__meta">
+                                <span><i class="icon-tag" aria-hidden="true"></i>قیمت واحد: {{ item.price|toman }}</span>
+                                {% if item.product.brand %}<span>{{ item.product.brand.name }}</span>{% endif %}
+                                {% if item.product.category %}<span>{{ item.product.category.name }}</span>{% endif %}
+                                {% if discounted_product_id and item.product.id == discounted_product_id %}
+                                <span class="ar-badge ar-badge--success"><i class="icon-check" aria-hidden="true"></i>تخفیف اعمال شد</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="ar-cartrow__actions">
+                            <div class="ar-qty" data-ar-qty>
+                                <button type="button" data-qty-step="-1" aria-label="کاهش تعداد {{ item.product.name }}">
+                                    <i class="icon-minus" aria-hidden="true"></i>
+                                </button>
+                                <label class="ar-sr-only" for="qty-{{ item.product.id }}">تعداد {{ item.product.name }}</label>
+                                <input id="qty-{{ item.product.id }}" type="text" inputmode="numeric" pattern="[0-9]*"
+                                       name="qty_{{ item.product.id }}"
+                                       value="{{ item.quantity }}" min="1"
+                                       max="{% if item.product.stock %}{{ item.product.stock }}{% else %}99{% endif %}"
+                                       data-qty-input autocomplete="off" required>
+                                <button type="button" data-qty-step="1" aria-label="افزایش تعداد {{ item.product.name }}">
+                                    <i class="icon-plus" aria-hidden="true"></i>
+                                </button>
+                            </div>
+
+                            <button type="submit" class="ar-cartrow__remove"
+                                    formaction="{% url 'cart:remove' item.product.id %}"
+                                    formmethod="post" formnovalidate
+                                    name="next" value="{{ request.path }}"
+                                    aria-label="حذف {{ item.product.name }} از سبد">
+                                <i class="icon-close" aria-hidden="true"></i>
+                            </button>
+                        </div>
+
+                        <div class="ar-cartrow__price">
+                            <b>{{ item.total|toman }}</b>
+                            <small>{{ item.quantity|ar_digits }} عدد</small>
+                        </div>
+                    </article>
+                    {% endfor %}
+                </div>
+
+                <div class="ar-row-between mt-4">
+                    <button type="submit" class="ar-btn ar-btn--outline" data-ar-submit>
+                        <i class="icon-refresh" aria-hidden="true"></i>
+                        به‌روزرسانی سبد
+                    </button>
+                    <a class="ar-link-more" href="{% url 'products:list' %}">
+                        ادامه خرید <i class="icon-long-arrow-left" aria-hidden="true"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <aside class="ar-cartaside">
+            <section class="ar-summary" aria-labelledby="cart-summary-title">
+                <h2 class="ar-summary__title" id="cart-summary-title">
+                    <i class="icon-th-list" aria-hidden="true"></i>
+                    خلاصه سفارش
+                </h2>
+
+                <div class="ar-summary__row">
+                    <span>جمع کالاها</span>
+                    <b>{{ cart_total|toman }}</b>
+                </div>
+
+                {% if discount_code and discount_amount %}
+                <div class="ar-summary__row ar-summary__row--off">
+                    <span><i class="icon-tag" aria-hidden="true"></i>تخفیف ({{ discount_code.code }})</span>
+                    <b>− {{ discount_amount|toman }}</b>
+                </div>
+                {% endif %}
+
+                <div class="ar-summary__row">
+                    <span>هزینه ارسال</span>
+                    <b>{% if shipping_cost %}{{ shipping_cost|toman }}{% else %}رایگان{% endif %}</b>
+                </div>
+
+                <div class="ar-summary__total">
+                    <span>مبلغ قابل پرداخت</span>
+                    <b>{{ total_payable|toman }}</b>
+                </div>
+
+                <form method="post" action="{% url 'cart:checkout' %}" data-ar-lock class="ar-summary__cta">
+                    {% csrf_token %}
+                    <button type="submit" class="ar-btn ar-btn--gold ar-btn--block ar-btn--lg">
+                        <i class="icon-credit-card" aria-hidden="true"></i>
+                        ادامه و پرداخت
+                    </button>
+                </form>
+
+                <p class="ar-summary__hint">
+                    <i class="icon-shield" aria-hidden="true"></i>
+                    پرداخت امن از طریق درگاه‌های معتبر
+                </p>
+            </section>
+
+            <section class="ar-summary" aria-labelledby="cart-coupon-title">
+                <h2 class="ar-summary__title" id="cart-coupon-title">
+                    <i class="icon-tag" aria-hidden="true"></i>
+                    کد تخفیف
+                </h2>
+
+                {% if discount_code %}
+                <div class="ar-coupon__applied">
+                    <span>
+                        <i class="icon-check" aria-hidden="true"></i>
+                        <code>{{ discount_code.code }}</code>
+                    </span>
+                    <form action="{% url 'cart:discount_remove' %}" method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="ar-btn ar-btn--danger ar-btn--xs">
+                            <i class="icon-close" aria-hidden="true"></i>
+                            حذف کد
+                        </button>
+                    </form>
+                </div>
+                <p class="ar-hint">کد «{{ discount_code.code }}» روی این سبد فعال است. برای استفاده از کد دیگر، ابتدا آن را حذف کنید.</p>
+                {% else %}
+                <form action="{% url 'cart:discount_apply' %}" method="post" class="ar-coupon">
+                    {% csrf_token %}
+                    <div class="ar-coupon__row">
+                        <label class="ar-sr-only" for="cart-coupon">کد تخفیف</label>
+                        <input id="cart-coupon" type="text" name="code"
+                               placeholder="کد تخفیف خود را وارد کنید" autocomplete="off" maxlength="50" dir="ltr">
+                        <button class="ar-btn ar-btn--soft" type="submit">اعمال</button>
+                    </div>
+                </form>
+                <p class="ar-hint">با اعمال کد، تخفیف بلافاصله روی مبلغ سبد محاسبه می‌شود.</p>
+                {% endif %}
+            </section>
+        </aside>
+    </div>
+</div>
+{% endblock %}

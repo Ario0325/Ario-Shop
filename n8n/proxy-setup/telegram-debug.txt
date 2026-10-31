@@ -1,0 +1,192 @@
+﻿============================================================
+راهنمای عیب‌یابی اطلاع‌رسانی تلگرام - آریو شاپ
+============================================================
+
+سیستم: Django → Cloudflare Worker → n8n → Telegram Bot
+
+
+============================================================
+بخش ۱: تست Cloudflare Worker (از کامپیوتر محلی)
+============================================================
+
+ابتدا مطمئن شو Worker مسیر جدید را می‌شناسد:
+
+curl https://quiet-field-a090.mimoomim456.workers.dev/
+
+پاسخ باید: {"status":"ok","timestamp":"..."}
+
+حالا تست webhook تلگرام:
+
+curl -X POST https://quiet-field-a090.mimoomim456.workers.dev/webhook/new-order-notify -H "Content-Type: application/json" -d "{\"secret_token\":\"ario-shop-secret-token\",\"order_id\":1,\"order_number\":\"TEST-001\",\"customer_name\":\"تست\",\"customer_email\":\"test@test.com\",\"customer_phone\":\"09123456789\",\"total_price\":100000,\"shipping_cost\":0,\"discount\":0,\"payment_method\":\"آنلاین\",\"shipping_address\":\"تهران\",\"items\":[{\"name\":\"محصول تست\",\"quantity\":1,\"unit_price\":100000,\"total_price\":100000}],\"created_at\":\"2026-06-15\",\"status\":\"paid\"}"
+
+پاسخ‌های ممکن:
+  200 + {"status":"ok","message":"Notification sent"} = همه چیز درست است
+  404 + {"error":"Not found"} = Worker آپدیت نشده (مرحله ۲ را ببینید)
+  502 = n8n خواب است یا در دسترس نیست
+  401 = توکن اشتباه است
+
+
+============================================================
+بخش ۲: بررسی Cloudflare Worker
+============================================================
+
+اگر Worker خطای 404 برگرداند یعنی مسیر /webhook/new-order-notify
+هنوز اضافه نشده. باید دوباره deploy کنید:
+
+cd n8n/proxy-setup/
+wrangler deploy
+
+بعد از deploy دوباره تست کنید.
+
+
+============================================================
+بخش ۳: بررسی n8n
+============================================================
+
+۳.۱. آیا Workflow فعال است؟
+   - وارد n8n شوید
+   - Workflow "Django n8n" را باز کنید
+   - toggle بالای صفحه باید سبز (Active) باشد
+
+۳.۲. آیا Telegram Credential تنظیم شده؟
+   - از منوی چپ Credentials
+   - باید یک Telegram credential وجود داشته باشد
+   - روی آن کلیک کنید - Access Token باید پر باشد
+
+۳.۳. آیا Chat ID تنظیم شده؟
+   - نود "ارسال پیام تلگرام" را باز کنید
+   - Chat ID باید یک عدد باشد (مثل 123456789)
+   - اگر خالی است یا PLACEHOLDER است، باید Chat ID خود را وارد کنید
+
+۳.۴. بررسی Executions
+   - از منوی چپ Executions را باز کنید
+   - آیا درخواستی از webhook جدید ثبت شده؟
+   - اگر خطا دارد، روی آن کلیک کنید تا جزئیات ببینید
+
+
+============================================================
+بخش ۴: دریافت Chat ID تلگرام
+============================================================
+
+اگر Chat ID ندارید:
+
+روش ۱: ربات @userinfobot را باز کنید و Start بزنید
+روش ۲: به ربات خودتان یک پیام بفرستید سپس:
+   https://api.telegram.org/bot<TOKEN>/getUpdates
+   را در مرورگر باز کنید (TOKEN را با توکن ربات جایگزین کنید)
+   در پاسخ JSON، فیلد "chat":{"id":...} را ببینید
+
+
+============================================================
+بخش ۵: تست از PythonAnywhere
+============================================================
+
+وارد PythonAnywhere شوید و در کنسول اجرا کنید:
+
+python3 -c "
+import requests
+r = requests.post(
+    'https://quiet-field-a090.mimoomim456.workers.dev/webhook/new-order-notify',
+    json={
+        'secret_token': 'ario-shop-secret-token',
+        'order_id': 1,
+        'order_number': 'TEST-001',
+        'customer_name': 'تست',
+        'customer_email': 'test@test.com',
+        'customer_phone': '09123456789',
+        'total_price': 100000,
+        'shipping_cost': 0,
+        'discount': 0,
+        'payment_method': 'آنلاین',
+        'shipping_address': 'تهران',
+        'items': [{'name': 'محصول تست', 'quantity': 1, 'unit_price': 100000, 'total_price': 100000}],
+        'created_at': '2026-06-15',
+        'status': 'paid'
+    },
+    headers={'Content-Type': 'application/json'},
+    timeout=15
+)
+print(r.status_code, r.text)
+"
+
+پاسخ باید 200 باشد. اگر خطا گرفتید، پیام خطا را ببینید.
+
+
+============================================================
+بخش ۶: تست از Django Shell
+============================================================
+
+cd ~/Ario
+source venv/bin/activate
+python -c "
+import os, django
+os.environ['DJANGO_SETTINGS_MODULE'] = 'Ario_Shop.settings'
+django.setup()
+from django.conf import settings
+print('TELEGRAM URL:', settings.N8N_TELEGRAM_WEBHOOK_URL)
+from Cart_Module.services import N8nOrderService
+from Cart_Module.models import Order
+order = Order.objects.last()
+if order:
+    print('Order:', order.order_number)
+    result = N8nOrderService.send_telegram_notification(order)
+    print('Result:', result)
+else:
+    print('No orders found')
+"
+
+خروجی را بفرستید تا مشکل دقیق مشخص شود.
+
+
+============================================================
+بخش ۷: بررسی لاگ‌های PythonAnywhere
+============================================================
+
+به تب Web بروید و روی Error log کلیک کنید.
+دنبال کلمات زیر بگردید:
+  - telegram
+  - new-order-notify
+  - Notification sent
+  - خطا در ارسال
+
+اگر خطایی مرتبط با تلگرام نیست یعنی کد اصلاً اجرا نشده.
+
+
+============================================================
+بخش ۸: رایج‌ترین مشکلات
+============================================================
+
+مشکل ۱: Worker خطای 404 برمی‌گرداند
+  علت: Worker آپدیت نشده
+  راه‌حل: wrangler deploy اجرا کنید
+
+مشکل ۲: n8n خطای 401 برمی‌گرداند
+  علت: توکن اشتباه
+  راه‌حل: مطمئن شوید secret_token در کد و n8n یکسان است
+
+مشکل ۳: n8n خطای 500 برمی‌گرداند
+  علت: Telegram credential تنظیم نشده
+  راه‌حل: در n8n Telegram credential بسازید
+
+مشکل ۴: پیام تلگرام نمی‌آید ولی همه چیز 200 است
+  علت: Chat ID اشتباه یا خالی
+  راه‌حل: Chat ID را بررسی کنید
+
+مشکل ۵: Django اصلاً درخواست نمی‌فرستد
+  علت: کد آپدیت نشده یا وب‌اپ ریلود نشده
+  راه‌حل: git pull + Reload
+
+مشکل ۶: PythonAnywhere نمی‌تواند به Worker وصل شود
+  علت: مشکل شبکه
+  راه‌حل: تست بخش ۵ را انجام دهید
+
+
+============================================================
+خلاصه مراحل تست (به ترتیب)
+============================================================
+
+مرحله ۱: Worker را با curl تست کنید (بخش ۱)
+مرحله ۲: n8n را بررسی کنید (بخش ۳)
+مرحله ۳: اتصال از PythonAnywhere را تست کنید (بخش ۵)
+مرحله ۴: از Django shell تست کنید (بخش ۶)
+مرحله ۵: لاگ‌ها را بررسی کنید (بخش ۷)

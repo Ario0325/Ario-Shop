@@ -1,0 +1,265 @@
+{% extends 'shared/base.html' %}
+{% load static %}
+{% load number_tags %}
+
+{% block title %}درباره ما | آریو شاپ{% endblock %}
+{% block meta_description %}داستان آریو شاپ، دید و ماموریت ما، تیم پشت فروشگاه و برندهایی که با آن‌ها همکاری می‌کنیم.{% endblock %}
+
+{% block content %}
+{% url 'products:list' as shop_url %}
+{% url 'contact' as contact_url %}
+
+<div class="ar-container">
+    {% include 'shared/breadcrumbs.html' with crumb_last="درباره ما" %}
+</div>
+
+<section class="ar-container ar-section--flush">
+    <div class="ar-about-hero" data-ar-reveal>
+        <img src="{% static 'assets/images/v2/about-hero.webp' %}"
+             srcset="{% static 'assets/images/v2/about-hero-960.webp' %} 960w, {% static 'assets/images/v2/about-hero.webp' %} 1600w"
+             sizes="(max-width: 900px) 100vw, 1340px"
+             alt="رگال لباس‌های کالکشن آریو شاپ در طیف‌های شنی و آلویی"
+             width="1600" height="600" fetchpriority="high" decoding="async">
+        <span class="ar-about-hero__veil" aria-hidden="true"></span>
+        <div class="ar-about-hero__body">
+            <span class="ar-tile__eyebrow">درباره آریو شاپ</span>
+            <h1 class="ar-about-hero__title">انتخاب بهتر، تجربه‌ای ماندگار</h1>
+            <p class="ar-about-hero__text">
+                آریو شاپ از یک باور ساده شروع شد: خرید آنلاین باید مطمئن، سریع و لذت‌بخش باشد.
+                ما هر محصول را پیش از رسیدن به دست شما بررسی می‌کنیم تا انتخابی مطمئن داشته باشید.
+            </p>
+            <div class="ar-cluster mt-4">
+                <a class="ar-btn ar-btn--gold" href="{{ shop_url }}">
+                    شروع خرید <i class="icon-long-arrow-left" aria-hidden="true"></i>
+                </a>
+                <a class="ar-btn ar-btn--ghost-light" href="{{ contact_url }}">تماس با ما</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% if about_page.vision_description or about_page.mission_description %}
+<section class="ar-container ar-section--tight">
+    <div class="ar-section-head">
+        <div class="ar-section-head__text">
+            <span class="ar-eyebrow">باور ما</span>
+            <h2 class="ar-section-title">دو اصل ساده، در همهٔ انتخاب‌ها</h2>
+        </div>
+    </div>
+
+    <div class="ar-values">
+        {% if about_page.vision_description %}
+        <article class="ar-value" data-ar-reveal>
+            <span class="ar-value__icon" aria-hidden="true"><i class="icon-eye"></i></span>
+            <h3 class="ar-value__title">{{ about_page.vision_title }}</h3>
+            <p class="ar-value__text" data-ar-digitize>{{ about_page.vision_description|linebreaksbr }}</p>
+        </article>
+        {% endif %}
+
+        {% if about_page.mission_description %}
+        <article class="ar-value" data-ar-reveal style="--ar-delay: 1">
+            <span class="ar-value__icon" aria-hidden="true"><i class="icon-rocket"></i></span>
+            <h3 class="ar-value__title">{{ about_page.mission_title }}</h3>
+            <p class="ar-value__text" data-ar-digitize>{{ about_page.mission_description|linebreaksbr }}</p>
+        </article>
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+
+<section class="ar-container ar-section--tight">
+    <div class="ar-story">
+        <div class="ar-story__media ar-story__media--tall" data-ar-reveal>
+            {% if about_page.who_we_are_image_front %}
+            <img src="{{ about_page.who_we_are_image_front.url }}" alt="{{ about_page.who_we_are_title }}"
+                 loading="lazy" decoding="async">
+            {% else %}
+            <img src="{% static 'assets/images/v2/about-story-main.webp' %}"
+                 alt="انتخاب و چیدمان محصولات در آریو شاپ"
+                 width="800" height="1067" loading="lazy" decoding="async">
+            {% endif %}
+
+            {% if about_page.who_we_are_image_back %}
+            <span class="ar-story__thumb">
+                <img src="{{ about_page.who_we_are_image_back.url }}" alt="" loading="lazy" decoding="async">
+            </span>
+            {% else %}
+            <span class="ar-story__thumb">
+                <img src="{% static 'assets/images/v2/about-story.webp' %}" alt=""
+                     width="276" height="276" loading="lazy" decoding="async">
+            </span>
+            {% endif %}
+
+            {% if team_members %}
+            <span class="ar-story__badge">
+                <b>{{ team_members|length|ar_digits }}</b>
+                نفر در تیم آریو
+            </span>
+            {% endif %}
+        </div>
+
+        <div data-ar-reveal>
+            <span class="ar-eyebrow">داستان ما</span>
+            <h2 class="ar-story__title">{{ about_page.who_we_are_title }}</h2>
+            {% if about_page.who_we_are_subtitle %}
+            <p class="ar-story__lead" data-ar-digitize>{{ about_page.who_we_are_subtitle|linebreaksbr }}</p>
+            {% endif %}
+            {% if about_page.who_we_are_description %}
+            <div class="ar-story__text" data-ar-digitize>{{ about_page.who_we_are_description|linebreaks }}</div>
+            {% endif %}
+            <div class="ar-cluster mt-5">
+                <a class="ar-btn ar-btn--soft" href="{{ shop_url }}">
+                    مشاهده محصولات <i class="icon-long-arrow-left" aria-hidden="true"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% if brands %}
+<section class="ar-container ar-section--tight">
+    <div class="ar-section-head">
+        <div class="ar-section-head__text">
+            <span class="ar-eyebrow">همکاران ما</span>
+            <h2 class="ar-section-title">{{ about_page.brands_title }}</h2>
+            {% if about_page.brands_description %}
+            <p class="ar-section-desc">{{ about_page.brands_description }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="ar-brandrail{% if brands|length < 4 %} ar-brandrail--static{% endif %}"
+         aria-label="برندهای همکار آریو شاپ"{% if brands|length > 3 %} tabindex="0"{% endif %}>
+        <div class="ar-brandrail__track">
+            {% for brand in brands %}
+            {% if brand.website %}
+            <a class="ar-brandrail__item" href="{{ brand.website }}" target="_blank" rel="noopener">
+            {% else %}
+            <span class="ar-brandrail__item">
+            {% endif %}
+                {% if brand.logo %}
+                <img src="{{ brand.logo.url }}" alt="{{ brand.name }}" loading="lazy" decoding="async">
+                {% else %}
+                <span>{{ brand.name }}</span>
+                {% endif %}
+            {% if brand.website %}</a>{% else %}</span>{% endif %}
+            {% endfor %}
+
+            {% if brands|length > 3 %}
+            {% for brand in brands %}
+            <span class="ar-brandrail__item" aria-hidden="true">
+                {% if brand.logo %}
+                <img src="{{ brand.logo.url }}" alt="" loading="lazy" decoding="async">
+                {% else %}
+                <span>{{ brand.name }}</span>
+                {% endif %}
+            </span>
+            {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+{% if team_members %}
+<section class="ar-container ar-section--tight">
+    <div class="ar-section-head">
+        <div class="ar-section-head__text">
+            <span class="ar-eyebrow">تیم آریو</span>
+            <h2 class="ar-section-title">{{ about_page.team_title }}</h2>
+            <p class="ar-section-desc">آدم‌هایی که هر روز تلاش می‌کنند تجربهٔ خرید شما بهتر باشد.</p>
+        </div>
+    </div>
+
+    <div class="ar-team">
+        {% for member in team_members %}
+        <article class="ar-member" data-ar-reveal style="--ar-delay: {{ forloop.counter0 }}">
+            <div class="ar-member__media">
+                {% if member.photo %}
+                <img src="{{ member.photo.url }}" alt="{{ member.name }}"
+                     loading="lazy" decoding="async">
+                {% else %}
+                <span class="ar-member__fallback" aria-hidden="true">{{ member.name|slice:":1" }}</span>
+                {% endif %}
+            </div>
+            <h3 class="ar-member__name">{{ member.name }}</h3>
+            <span class="ar-member__role">{{ member.position }}</span>
+            {% if member.bio %}
+            <p class="ar-member__bio">{{ member.bio }}</p>
+            {% endif %}
+            {% if member.facebook_url or member.twitter_url or member.instagram_url %}
+            <div class="ar-member__socials">
+                {% if member.instagram_url %}
+                <a href="{{ member.instagram_url }}" target="_blank" rel="noopener"
+                   aria-label="اینستاگرام {{ member.name }}"><i class="icon-instagram" aria-hidden="true"></i></a>
+                {% endif %}
+                {% if member.twitter_url %}
+                <a href="{{ member.twitter_url }}" target="_blank" rel="noopener"
+                   aria-label="توییتر {{ member.name }}"><i class="icon-twitter" aria-hidden="true"></i></a>
+                {% endif %}
+                {% if member.facebook_url %}
+                <a href="{{ member.facebook_url }}" target="_blank" rel="noopener"
+                   aria-label="فیسبوک {{ member.name }}"><i class="icon-facebook-f" aria-hidden="true"></i></a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </article>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if testimonials %}
+<section class="ar-band">
+    <div class="ar-container">
+        <div class="ar-section-head">
+            <div class="ar-section-head__text">
+                <span class="ar-eyebrow">تجربهٔ خرید</span>
+                <h2 class="ar-section-title">{{ about_page.testimonials_title }}</h2>
+                <p class="ar-section-desc">روایت مشتریانی که خریدشان را به آریو شاپ سپرده‌اند.</p>
+            </div>
+        </div>
+
+        <div class="ar-quotes" tabindex="0" role="group" aria-label="نظرات مشتریان آریو شاپ">
+            {% for testimonial in testimonials %}
+            <blockquote class="ar-quote">
+                <p class="ar-quote__text">«{{ testimonial.review }}»</p>
+                <footer class="ar-quote__who">
+                    {% if testimonial.photo %}
+                    <span class="ar-quote__avatar">
+                        <img src="{{ testimonial.photo.url }}" alt="" width="76" height="76"
+                             loading="lazy" decoding="async">
+                    </span>
+                    {% else %}
+                    <span class="ar-quote__avatar" aria-hidden="true">{{ testimonial.customer_name|slice:":1" }}</span>
+                    {% endif %}
+                    <span>
+                        <span class="ar-quote__name">{{ testimonial.customer_name }}</span>
+                        <span class="ar-quote__role">{{ testimonial.customer_role }}</span>
+                    </span>
+                </footer>
+            </blockquote>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<section class="ar-container ar-section--tight">
+    <div class="ar-ctaband" data-ar-reveal>
+        <div>
+            <span class="ar-tile__eyebrow">قدم بعدی</span>
+            <h2 class="ar-ctaband__title">آماده‌اید انتخاب بعدی‌تان را پیدا کنید؟</h2>
+            <p class="ar-ctaband__text">
+                محصولات منتخب آریو شاپ را ببینید یا اگر سؤالی دارید، تیم پشتیبانی ما آمادهٔ پاسخ است.
+            </p>
+        </div>
+        <div class="ar-ctaband__actions">
+            <a class="ar-btn ar-btn--gold" href="{{ shop_url }}">
+                رفتن به فروشگاه <i class="icon-long-arrow-left" aria-hidden="true"></i>
+            </a>
+            <a class="ar-btn ar-btn--ghost-light" href="{{ contact_url }}">تماس با ما</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

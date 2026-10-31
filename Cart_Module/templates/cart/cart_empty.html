@@ -1,0 +1,57 @@
+{% extends 'shared/base.html' %}
+{% load static %}
+
+{% block title %}سبد خرید خالی | آریو شاپ{% endblock %}
+
+{% block body_class %}no-bottomnav{% endblock %}
+
+{% block content %}
+<div class="ar-container">
+    {% include 'shared/breadcrumbs.html' with crumb1_title="سبد خرید" crumb_last="خالی" %}
+    {% include 'shared/page_head.html' with title="سبد خرید" desc="هنوز چیزی انتخاب نکرده‌اید؛ از میان محصولات منتخب آریو شاپ شروع کنید." eyebrow="مرحله ۱ از ۳" %}
+</div>
+
+<div class="ar-container page-content">
+    <ol class="ar-cartsteps" aria-label="مراحل خرید">
+        <li class="ar-step is-current" aria-current="step">
+            <span class="ar-step__dot">۱</span>
+            <span>سبد خرید</span>
+        </li>
+        <li class="ar-step__sep" aria-hidden="true"></li>
+        <li class="ar-step">
+            <span class="ar-step__dot">۲</span>
+            <span>اطلاعات ارسال</span>
+        </li>
+        <li class="ar-step__sep" aria-hidden="true"></li>
+        <li class="ar-step">
+            <span class="ar-step__dot">۳</span>
+            <span>پرداخت</span>
+        </li>
+    </ol>
+
+    <div class="ar-empty">
+        <span class="ar-empty__icon"><i class="icon-shopping-cart" aria-hidden="true"></i></span>
+        <p>
+            <strong>سبد خرید شما خالی است</strong>
+            هنوز محصولی به سبد اضافه نکرده‌اید. دسته‌بندی‌ها را ببینید یا محصولات پرفروش را مرور کنید تا انتخاب مناسب‌ترید را پیدا کنید.
+        </p>
+        <div class="ar-row-center">
+            <a class="ar-btn ar-btn--gold ar-btn--lg" href="{% url 'products:list' %}">
+                <i class="icon-shopping-bag" aria-hidden="true"></i>
+                رفتن به فروشگاه
+            </a>
+            {% if user.is_authenticated %}
+            <a class="ar-btn ar-btn--outline ar-btn--lg" href="{% url 'accounts:orders' %}">
+                <i class="icon-th-list" aria-hidden="true"></i>
+                سفارش‌های من
+            </a>
+            {% else %}
+            <a class="ar-btn ar-btn--outline ar-btn--lg" href="{% url 'accounts:login_register' %}">
+                <i class="icon-sign-in" aria-hidden="true"></i>
+                ورود به حساب
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

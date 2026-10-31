@@ -1,0 +1,161 @@
+{% load static %}
+{% load number_tags %}
+
+<header class="ar-header" data-ar-header>
+    <div class="ar-hdr__util">
+        <div class="ar-container ar-hdr__util-in">
+            <p class="ar-hdr__ship">
+                <i class="icon-truck" aria-hidden="true"></i>
+                <span>ارسال رایگان به سراسر ایران — بسته‌بندی با وسواس، پرداخت امن</span>
+            </p>
+            <div class="ar-hdr__util-links">
+                <a href="{% url 'accounts:orders' %}">پیگیری سفارش</a>
+                <a href="{% url 'contact' %}">تماس با ما</a>
+                <a href="{% url 'AboutUs_Module:about' %}">درباره آریو</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="ar-hdr__bar">
+        <div class="ar-container ar-hdr__bar-in">
+            <button class="ar-burger" type="button" data-ar-open="ar-drawer-nav"
+                    aria-label="باز کردن منو" aria-expanded="false" aria-controls="ar-drawer-nav">
+                <span></span><span></span><span></span>
+            </button>
+
+            <a href="{% url 'index' %}" class="ar-brand" aria-label="آریو شاپ — صفحه اصلی">
+                <span class="ar-brand__mark">{% include 'shared/logo_mark.html' %}</span>
+                <span class="ar-brand__text">
+                    <span class="ar-brand__name">آریو شاپ</span>
+                    <span class="ar-brand__tag">ARIO SHOP</span>
+                </span>
+            </a>
+
+            <nav class="ar-hdr__nav" aria-label="منوی اصلی">
+                <a href="{% url 'index' %}" class="{% if request.path == '/' %}is-active{% endif %}"
+                   {% if request.path == '/' %}aria-current="page"{% endif %}>خانه</a>
+                <a href="{% url 'products:list' %}" class="{% if '/shop/' in request.path %}is-active{% endif %}"
+                   {% if '/shop/' in request.path %}aria-current="page"{% endif %}>فروشگاه</a>
+                <button class="ar-hdr__navbtn" type="button" data-ar-mega-toggle="ar-mega"
+                        aria-expanded="false" aria-controls="ar-mega">
+                    <i class="icon-th-list" aria-hidden="true"></i>
+                    <span>دسته‌بندی‌ها</span>
+                    <svg class="ar-hdr__caret" viewBox="0 0 10 6" aria-hidden="true">
+                        <path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5"
+                              stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                <a href="{% url 'products:list' %}?sort=popularity">پرفروش‌ها</a>
+                <a class="ar-nav-opt" href="{% url 'products:list' %}?sort=rating">پیشنهادها</a>
+                <a class="ar-nav-opt" href="{% url 'AboutUs_Module:about' %}">درباره ما</a>
+            </nav>
+
+            <form class="ar-omni" action="{% url 'products:search' %}" method="get" role="search">
+                <span class="ar-omni__icon" aria-hidden="true"><i class="icon-search"></i></span>
+                <label for="arOmniSearch" class="ar-sr-only">جستجوی محصولات</label>
+                <input id="arOmniSearch" type="search" name="q" value="{{ query|default:'' }}"
+                       placeholder="جستجو در میان محصولات آریو شاپ…" autocomplete="off">
+                <kbd class="ar-omni__kbd" aria-hidden="true">Ctrl K</kbd>
+                <button class="ar-omni__submit" type="submit">جستجو</button>
+            </form>
+
+            <div class="ar-hdr__actions">
+                <button class="ar-action ar-action--icon ar-action--searchonly" type="button"
+                        data-ar-open="ar-search" aria-label="جستجو" aria-expanded="false" aria-controls="ar-search">
+                    <i class="icon-search" aria-hidden="true"></i>
+                </button>
+
+                <button class="ar-action ar-action--icon ar-action--theme" type="button" data-ar-theme-toggle
+                        aria-label="فعال کردن حالت تاریک" aria-pressed="false" title="حالت نمایش">
+                    <svg class="ar-themeico" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none"
+                         stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                        <g class="ar-themeico__moon">
+                            <path d="M20.5 13.6A8.5 8.5 0 1 1 10.4 3.5a6.8 6.8 0 0 0 10.1 10.1Z"/>
+                        </g>
+                        <g class="ar-themeico__sun">
+                            <circle cx="12" cy="12" r="4"/>
+                            <path d="M12 2.6v2.1M12 19.3v2.1M4.4 4.4l1.5 1.5M18.1 18.1l1.5 1.5M2.6 12h2.1M19.3 12h2.1M4.4 19.6l1.5-1.5M18.1 5.9l1.5-1.5"/>
+                        </g>
+                    </svg>
+                </button>
+
+                {% if user.is_authenticated %}
+                <a class="ar-action ar-action--user" href="{% url 'accounts:dashboard' %}">
+                    <i class="icon-user" aria-hidden="true"></i>
+                    <span class="ar-action__text">
+                        <span class="ar-action__eyebrow">حساب من</span>
+                        <span class="ar-action__label">{{ user.get_full_name|default:user.get_username|truncatechars:14 }}</span>
+                    </span>
+                </a>
+                {% else %}
+                <a class="ar-action ar-action--user" href="{% url 'accounts:login_register' %}">
+                    <i class="icon-user" aria-hidden="true"></i>
+                    <span class="ar-action__text">
+                        <span class="ar-action__eyebrow">خوش آمدید</span>
+                        <span class="ar-action__label">ورود / ثبت‌نام</span>
+                    </span>
+                </a>
+                {% endif %}
+
+                <button class="ar-cartbtn" type="button" data-ar-open="ar-drawer-cart"
+                        aria-label="سبد خرید" aria-expanded="false" aria-controls="ar-drawer-cart">
+                    <span class="ar-cartbtn__icon">
+                        <i class="icon-shopping-cart" aria-hidden="true"></i>
+                    </span>
+                    <span class="ar-cartbtn__text">
+                        <span class="ar-cartbtn__eyebrow">سبد خرید</span>
+                        <span class="ar-cartbtn__value">
+                            {% if cart_total %}{{ cart_total|toman }}{% else %}خالی است{% endif %}
+                        </span>
+                    </span>
+                    <span class="ar-cartbtn__count">{{ cart_count|default:0|ar_digits }}</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- category mega panel -->
+        <div class="ar-mega" id="ar-mega">
+            <div class="ar-mega__panel">
+                {% for category in navbar_categories|slice:":4" %}
+                <div class="ar-mega__col">
+                    <a class="ar-mega__col-title" href="{{ category.get_absolute_url }}">{{ category.name }}</a>
+                    <ul class="ar-mega__links">
+                        {% if category.has_children %}
+                            {% for child in category.children.all|slice:":7" %}
+                                {% if child.is_active %}
+                                <li><a href="{{ child.get_absolute_url }}">{{ child.name }}</a></li>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                        <li><a href="{{ category.get_absolute_url }}">مشاهده همه محصولات</a></li>
+                    </ul>
+                </div>
+                {% empty %}
+                <div class="ar-mega__col">
+                    <a class="ar-mega__col-title" href="{% url 'products:list' %}">همه محصولات</a>
+                    <ul class="ar-mega__links">
+                        <li><a href="{% url 'products:list' %}">مشاهده فروشگاه</a></li>
+                    </ul>
+                </div>
+                {% endfor %}
+
+                <div class="ar-mega__promo">
+                    <span class="ar-badge ar-badge--accent">تا ۴۰٪ تخفیف</span>
+                    <h4>حراج پایان فصل</h4>
+                    <p>منتخبی از پرفروش‌ترین محصولات با قیمت ویژه</p>
+                    <a class="ar-link-more" href="{% url 'products:list' %}?sort=rating">
+                        مشاهده پیشنهادها <i class="icon-long-arrow-left" aria-hidden="true"></i>
+                    </a>
+                </div>
+
+                <div class="ar-mega__quick">
+                    <a href="{% url 'products:list' %}"><i class="icon-th-list" aria-hidden="true"></i> همه محصولات</a>
+                    <a href="{% url 'products:list' %}?sort=rating"><i class="icon-gift" aria-hidden="true"></i> پیشنهاد شگفت‌انگیز</a>
+                    <a href="{% url 'accounts:orders' %}"><i class="icon-truck" aria-hidden="true"></i> پیگیری سفارش</a>
+                    <a href="{% url 'AboutUs_Module:about' %}"><i class="icon-info-circle" aria-hidden="true"></i> درباره ما</a>
+                    <a href="{% url 'contact' %}"><i class="icon-envelope" aria-hidden="true"></i> تماس با ما</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>

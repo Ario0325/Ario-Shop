@@ -1,0 +1,143 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   آریو شاپ — پنل مدیریت
+   تم Ocean Blue (آبی اقیانوسی) — تیره و اعجاب‌انگیز
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+    /* رنگ‌های اصلی آبی اقیانوسی */
+    --ap-primary:       #06b6d4;
+    --ap-primary-dark:  #0891b2;
+    --ap-primary-light: #22d3ee;
+    --ap-primary-glow:  rgba(6, 182, 212, 0.25);
+    
+    --ap-accent:        #67e8f9;
+    --ap-accent-glow:   rgba(103, 232, 249, 0.2);
+    --ap-accent-light:  #cffafe;
+    
+    /* رنگ‌های مکمل */
+    --ap-success:       #10b981;
+    --ap-warning:       #f59e0b;
+    --ap-danger:        #ef4444;
+    --ap-info:          #06b6d4;
+    
+    /* رنگ‌های پس‌زمینه تیره - آبی عمیق */
+    --ap-bg:            #0a0f1a;
+    --ap-surface:       #0f172a;
+    --ap-surface-2:     #1e293b;
+    --ap-card:          #0c1929;
+    --ap-card-hover:    #1e293b;
+    --ap-border:        rgba(103, 232, 249, 0.08);
+    --ap-border-focus:  rgba(6, 182, 212, 0.5);
+    
+    /* متن */
+    --ap-text:          #f0f9ff;
+    --ap-text-muted:    #67e8f9;
+    --ap-text-dim:      #a5f3fc;
+    
+    /* سایه و شعاع */
+    --ap-shadow-sm:     0 4px 12px rgba(0, 0, 0, 0.6);
+    --ap-shadow-md:     0 8px 24px rgba(0, 0, 0, 0.7);
+    --ap-shadow-lg:     0 16px 48px rgba(0, 0, 0, 0.8);
+    --ap-shadow-glow:   0 0 30px rgba(6, 182, 212, 0.15);
+    
+    --ap-radius-sm:     8px;
+    --ap-radius-md:     12px;
+    --ap-radius-lg:     16px;
+    --ap-radius-xl:     24px;
+    
+    --ap-transition:    all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* شناسه تم */
+    --theme-id:         'ocean-blue';
+    --theme-name:       'آبی اقیانوسی';
+    --theme-is-dark:    true;
+}
+
+/* گرادینت ویژه برای هدر - دریایی */
+#header {
+    background: linear-gradient(180deg, #0f172a 0%, #0a0f1a 50%, #0c1929 100%) !important;
+    border-bottom: 1px solid var(--ap-border) !important;
+    box-shadow: 0 4px 30px rgba(6, 182, 212, 0.1) !important;
+}
+
+/* گرادینت ویژه برای دکمه‌های اصلی */
+.button, .submit-row input, [type="submit"], .btn {
+    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%) !important;
+    border: none !important;
+    box-shadow: 0 4px 14px rgba(6, 182, 212, 0.3) !important;
+}
+
+.button:hover, .submit-row input:hover, [type="submit"]:hover, .btn:hover {
+    background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%) !important;
+    box-shadow: 0 6px 20px rgba(6, 182, 212, 0.4) !important;
+    transform: translateY(-2px);
+}
+
+/* لینک‌ها با رنگ آبی */
+a:link, a:visited {
+    color: #22d3ee !important;
+}
+
+a:hover {
+    color: #67e8f9 !important;
+}
+
+/* هاور ماژول‌ها */
+.module:hover {
+    border-right: 3px solid #06b6d4 !important;
+    box-shadow: 0 8px 30px rgba(6, 182, 212, 0.2) !important;
+}
+
+/* جدول‌ها */
+table thead th {
+    background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%) !important;
+    border-bottom: 2px solid #06b6d4 !important;
+}
+
+/* فیلتر سایدبار */
+#changelist-filter {
+    border-right: 3px solid #06b6d4 !important;
+}
+
+/* انیمیشن اقیانوسی */
+@keyframes oceanWave {
+    0%, 100% { 
+        box-shadow: 0 0 20px rgba(6, 182, 212, 0.2);
+    }
+    50% { 
+        box-shadow: 0 0 40px rgba(6, 182, 212, 0.4), 0 0 60px rgba(6, 182, 212, 0.1);
+    }
+}
+
+.module {
+    animation: oceanWave 3s ease-in-out infinite;
+}
+
+/* فیلدهای فرم با فوکوس آبی */
+input[type="text"]:focus, 
+input[type="password"]:focus,
+input[type="email"]:focus,
+textarea:focus,
+select:focus {
+    border-color: #06b6d4 !important;
+    box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.2) !important;
+}
+
+/* اسکرول بار سفارشی */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #0f172a;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #06b6d4 0%, #0891b2 100%);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #22d3ee 0%, #06b6d4 100%);
+}

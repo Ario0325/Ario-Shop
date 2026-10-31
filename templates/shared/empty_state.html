@@ -1,0 +1,14 @@
+{% comment %}
+    Empty-state block. Pass: title, text, icon (icon-* class), action_url,
+    action_label.
+{% endcomment %}
+<div class="ar-empty">
+    <span class="ar-empty__icon"><i class="{{ icon|default:'icon-shopping-bag' }}" aria-hidden="true"></i></span>
+    <p>
+        <strong>{{ title|default:"چیزی اینجا نیست" }}</strong>
+        {% if text %}{{ text }}{% endif %}
+    </p>
+    {% if action_url %}
+    <a class="ar-btn ar-btn--outline ar-btn--sm" href="{{ action_url }}">{{ action_label|default:"بازگشت به فروشگاه" }}</a>
+    {% endif %}
+</div>

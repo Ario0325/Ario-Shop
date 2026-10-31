@@ -1,0 +1,150 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   آریو شاپ — پنل مدیریت
+   تم Rose Pink (رُز صورتی) — تیره و رمانتیک
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+    /* رنگ‌های اصلی صورتی - رُز */
+    --ap-primary:       #ec4899;
+    --ap-primary-dark:  #db2777;
+    --ap-primary-light: #f472b6;
+    --ap-primary-glow:  rgba(236, 72, 153, 0.25);
+    
+    --ap-accent:        #f9a8d4;
+    --ap-accent-glow:   rgba(249, 168, 212, 0.2);
+    --ap-accent-light:  #fce7f3;
+    
+    /* رنگ‌های مکمل */
+    --ap-success:       #22c55e;
+    --ap-warning:       #f59e0b;
+    --ap-danger:        #ef4444;
+    --ap-info:          #06b6d4;
+    
+    /* رنگ‌های پس‌زمینه تیره - شب رمانتیک */
+    --ap-bg:            #1a0f14;
+    --ap-surface:       #1c1118;
+    --ap-surface-2:    #2a1520;
+    --ap-card:          #1f1219;
+    --ap-card-hover:    #2a1520;
+    --ap-border:        rgba(249, 168, 212, 0.08);
+    --ap-border-focus:  rgba(236, 72, 153, 0.5);
+    
+    /* متن */
+    --ap-text:          #fdf2f8;
+    --ap-text-muted:    #f9a8d4;
+    --ap-text-dim:      #fbcfe8;
+    
+    /* سایه و شعاع */
+    --ap-shadow-sm:     0 4px 12px rgba(0, 0, 0, 0.5);
+    --ap-shadow-md:     0 8px 24px rgba(0, 0, 0, 0.6);
+    --ap-shadow-lg:     0 16px 48px rgba(0, 0, 0, 0.7);
+    --ap-shadow-glow:   0 0 30px rgba(236, 72, 153, 0.15);
+    
+    --ap-radius-sm:     8px;
+    --ap-radius-md:     12px;
+    --ap-radius-lg:     16px;
+    --ap-radius-xl:     24px;
+    
+    --ap-transition:    all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* شناسه تم */
+    --theme-id:         'rose-pink';
+    --theme-name:       'رُز صورتی';
+    --theme-is-dark:    true;
+}
+
+/* تنظیمات اضافی برای جلوه‌های صورتی */
+#header {
+    background: linear-gradient(135deg, #1c1118 0%, #1a0f14 100%) !important;
+    border-bottom: 1px solid var(--ap-border) !important;
+}
+
+/* گرادینت ویژه برای دکمه‌های اصلی */
+.button, .submit-row input, [type="submit"], .btn {
+    background: linear-gradient(135deg, #ec4899 0%, #db2777 100%) !important;
+    border: none !important;
+    box-shadow: 0 4px 14px rgba(236, 72, 153, 0.3) !important;
+}
+
+.button:hover, .submit-row input:hover, [type="submit"]:hover, .btn:hover {
+    background: linear-gradient(135deg, #f472b6 0%, #ec4899 100%) !important;
+    box-shadow: 0 6px 20px rgba(236, 72, 153, 0.4) !important;
+    transform: translateY(-2px);
+}
+
+/* لینک‌ها با رنگ صورتی */
+a:link, a:visited {
+    color: #f472b6 !important;
+}
+
+a:hover {
+    color: #f9a8d4 !important;
+}
+
+/* هاور ماژول‌ها */
+.module:hover {
+    border-right: 3px solid #ec4899 !important;
+    box-shadow: 0 8px 30px rgba(236, 72, 153, 0.15) !important;
+}
+
+/* جدول‌ها */
+table thead th {
+    background: linear-gradient(135deg, #1c1118 0%, #2a1520 100%) !important;
+    border-bottom: 2px solid #ec4899 !important;
+}
+
+/* فیلتر سایدبار */
+#changelist-filter {
+    border-right: 3px solid #ec4899 !important;
+}
+
+/* پیام‌های موفقیت */
+.messagelist .success {
+    border-right: 4px solid #22c55e !important;
+    background: rgba(34, 197, 94, 0.1) !important;
+}
+
+/* آیتم‌های فعال در لیست */
+.object-tools a:hover {
+    background: linear-gradient(135deg, #ec4899 0%, #db2777 100%) !important;
+    box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3) !important;
+}
+
+/* انیمیشن‌های ویژه */
+@keyframes roseGlow {
+    0%, 100% { box-shadow: 0 0 20px rgba(236, 72, 153, 0.2); }
+    50% { box-shadow: 0 0 40px rgba(236, 72, 153, 0.4); }
+}
+
+.module {
+    animation: roseGlow 3s ease-in-out infinite;
+}
+
+/* استایل ویژه برای فیلدهای فرم */
+input[type="text"]:focus, 
+input[type="password"]:focus,
+input[type="email"]:focus,
+textarea:focus,
+select:focus {
+    border-color: #ec4899 !important;
+    box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.2) !important;
+}
+
+/* اسکرول بار سفارشی */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1c1118;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #ec4899 0%, #db2777 100%);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #f472b6 0%, #ec4899 100%);
+}

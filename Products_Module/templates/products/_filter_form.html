@@ -1,0 +1,108 @@
+{% comment %}
+    Shared catalogue filter fields. Rendered twice (desktop sidebar + mobile
+    drawer), so no element ids are used; `form_id` is optional.
+{% endcomment %}
+{% load number_tags %}
+<form class="ar-filterform" method="get" action="{% url 'products:list' %}"
+      {% if form_id %}id="{{ form_id }}"{% endif %} data-ar-filter-form>
+    <input type="hidden" name="sort" value="{{ current_sort|default:'popularity' }}">
+
+    <details class="ar-fgroup" open>
+        <summary>
+            دسته‌بندی
+            <i class="icon-angle-down ar-caret" aria-hidden="true"></i>
+        </summary>
+        <div class="ar-fgroup__body">
+            <label class="ar-fcheck">
+                <input type="radio" name="category" value="" {% if not selected_category %}checked{% endif %}>
+                <span>همه دسته‌ها</span>
+            </label>
+            {% for category in categories %}
+            <label class="ar-fcheck">
+                <input type="radio" name="category" value="{{ category.slug }}"
+                       {% if selected_category and selected_category.id == category.id %}checked{% endif %}>
+                <span>{{ category.name }}</span>
+                <span class="ar-fcheck__count">{{ category.product_count|ar_digits }}</span>
+            </label>
+            {% endfor %}
+        </div>
+    </details>
+
+    {% if brands %}
+    <details class="ar-fgroup" open>
+        <summary>
+            برند
+            <i class="icon-angle-down ar-caret" aria-hidden="true"></i>
+        </summary>
+        <div class="ar-fgroup__body">
+            {% for brand in brands %}
+            <label class="ar-fcheck">
+                <input type="checkbox" name="brand" value="{{ brand.slug }}"
+                       {% if brand.slug == request.GET.brand %}checked{% endif %}>
+                <span>{{ brand.name }}</span>
+                <span class="ar-fcheck__count">{{ brand.product_count|ar_digits }}</span>
+            </label>
+            {% endfor %}
+        </div>
+    </details>
+    {% endif %}
+
+    <details class="ar-fgroup" open>
+        <summary>
+            محدوده قیمت (تومان)
+            <i class="icon-angle-down ar-caret" aria-hidden="true"></i>
+        </summary>
+        <div class="ar-fgroup__body">
+            <div class="ar-price">
+                <label>
+                    حداقل
+                    <input type="text" name="min_price" inputmode="numeric" pattern="[0-9]*"
+                           dir="ltr" placeholder="از" value="{{ request.GET.min_price|default:'' }}">
+                </label>
+                <label>
+                    حداکثر
+                    <input type="text" name="max_price" inputmode="numeric" pattern="[0-9]*"
+                           dir="ltr" placeholder="تا" value="{{ request.GET.max_price|default:'' }}">
+                </label>
+            </div>
+        </div>
+    </details>
+
+    <details class="ar-fgroup" open>
+        <summary>
+            سایز
+            <i class="icon-angle-down ar-caret" aria-hidden="true"></i>
+        </summary>
+        <div class="ar-fgroup__body">
+            <div class="ar-sizes">
+                <label class="ar-size"><input type="checkbox" name="size" value="xs"><span>XS</span></label>
+                <label class="ar-size"><input type="checkbox" name="size" value="s"><span>S</span></label>
+                <label class="ar-size"><input type="checkbox" name="size" value="m"><span>M</span></label>
+                <label class="ar-size"><input type="checkbox" name="size" value="l"><span>L</span></label>
+                <label class="ar-size"><input type="checkbox" name="size" value="xl"><span>XL</span></label>
+                <label class="ar-size"><input type="checkbox" name="size" value="xxl"><span>XXL</span></label>
+            </div>
+        </div>
+    </details>
+
+    <details class="ar-fgroup" open>
+        <summary>
+            موجودی
+            <i class="icon-angle-down ar-caret" aria-hidden="true"></i>
+        </summary>
+        <div class="ar-fgroup__body">
+            <label class="ar-fcheck">
+                <input type="checkbox" name="available" value="1" {% if request.GET.available %}checked{% endif %}>
+                <span>فقط کالاهای موجود</span>
+            </label>
+        </div>
+    </details>
+
+    <div class="ar-filters__actions">
+        <button type="submit" class="ar-btn ar-btn--primary ar-btn--block">
+            <i class="icon-check" aria-hidden="true"></i>
+            اعمال فیلترها
+        </button>
+        <a class="ar-btn ar-btn--outline ar-btn--block" href="{% url 'products:list' %}">پاک کردن</a>
+    </div>
+</form>

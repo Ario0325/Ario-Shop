@@ -1,0 +1,287 @@
+{% extends "admin/index.html" %}
+{% load static i18n admin_dashboard number_tags jalali_tags %}
+
+{% block extrahead %}
+{{ block.super }}
+<script src="{% static 'admin/js/dashboard.js' %}" defer></script>
+{% endblock %}
+
+{# the dashboard renders its own heading; suppress django's duplicate #}
+{% block content_title %}{% endblock %}
+
+{% block content %}
+{% dashboard_stats as stats %}
+{% dashboard_recent_orders as recent_orders %}
+{% dashboard_low_stock as low_stock %}
+{% dashboard_top_products as top_products %}
+{% admin_alerts as alerts %}
+{% admin_navigation as nav_groups %}
+
+<div class="dash" id="dash">
+
+    {# ── heading ─────────────────────────────────────────────────────────── #}
+    <div class="dash-head">
+        <div>
+            <p class="dash-head__eyebrow">
+                <svg aria-hidden="true"><use href="#i-sparkle"/></svg>
+                مرکز فرمان فروشگاه
+            </p>
+            <h1>داشبورد</h1>
+            <p class="dash-head__sub">تصویر زندهٔ فروش، سفارش‌ها و موجودی آریو شاپ</p>
+        </div>
+        <div class="dash-head__side">
+            <div class="dash-range" id="dash-range" role="group" aria-label="بازه زمانی">
+                <button type="button" class="dash-range__btn{% if stats.days == 7 %} is-active{% endif %}" data-days="7">۷ روز</button>
+                <button type="button" class="dash-range__btn{% if stats.days == 30 %} is-active{% endif %}" data-days="30">۳۰ روز</button>
+                <button type="button" class="dash-range__btn{% if stats.days == 90 %} is-active{% endif %}" data-days="90">۹۰ روز</button>
+            </div>
+            <span class="dash-date">
+                <svg aria-hidden="true"><use href="#i-calendar"/></svg>
+                {% jalali_today %}
+            </span>
+        </div>
+    </div>
+
+    {# ── the four numbers that matter ────────────────────────────────────── #}
+    <div class="kpi-grid">
+        <article class="kpi">
+            <div class="kpi__top">
+                <span class="kpi__label">درآمد خالص</span>
+                <span class="kpi__icon"><svg aria-hidden="true"><use href="#i-wallet"/></svg></span>
+            </div>
+            <div class="kpi__value" id="kpi-revenue">{{ stats.revenue|ar_digits }}<small> تومان</small></div>
+            <div class="kpi__foot">
+                <span class="kpi__delta{% if stats.revenue_delta > 0 %} kpi__delta--up{% elif stats.revenue_delta < 0 %} kpi__delta--down{% else %} kpi__delta--flat{% endif %}" id="kpi-revenue-delta">{{ stats.revenue_delta|ar_digits }}٪</span>
+                <span data-period-label>در {{ stats.days|ar_digits }} روز اخیر</span>
+            </div>
+        </article>
+
+        <article class="kpi kpi--info">
+            <div class="kpi__top">
+                <span class="kpi__label">سفارش‌های پرداخت‌شده</span>
+                <span class="kpi__icon"><svg aria-hidden="true"><use href="#i-receipt"/></svg></span>
+            </div>
+            <div class="kpi__value" id="kpi-orders">{{ stats.orders|ar_digits }}<small> سفارش</small></div>
+            <div class="kpi__foot">
+                <span class="kpi__delta{% if stats.orders_delta > 0 %} kpi__delta--up{% elif stats.orders_delta < 0 %} kpi__delta--down{% else %} kpi__delta--flat{% endif %}" id="kpi-orders-delta">{{ stats.orders_delta|ar_digits }}٪</span>
+                <span data-period-label>در {{ stats.days|ar_digits }} روز اخیر</span>
+            </div>
+        </article>
+
+        <article class="kpi kpi--teal">
+            <div class="kpi__top">
+                <span class="kpi__label">میانگین سبد خرید</span>
+                <span class="kpi__icon"><svg aria-hidden="true"><use href="#i-bag"/></svg></span>
+            </div>
+            <div class="kpi__value" id="kpi-aov">{{ stats.aov|ar_digits }}<small> تومان</small></div>
+            <div class="kpi__foot">
+                <span class="kpi__delta{% if stats.aov_delta > 0 %} kpi__delta--up{% elif stats.aov_delta < 0 %} kpi__delta--down{% else %} kpi__delta--flat{% endif %}" id="kpi-aov-delta">{{ stats.aov_delta|ar_digits }}٪</span>
+                <span data-period-label>در {{ stats.days|ar_digits }} روز اخیر</span>
+            </div>
+        </article>
+
+        <article class="kpi kpi--olive">
+            <div class="kpi__top">
+                <span class="kpi__label">مشتریان تازه</span>
+                <span class="kpi__icon"><svg aria-hidden="true"><use href="#i-users"/></svg></span>
+            </div>
+            <div class="kpi__value" id="kpi-customers">{{ stats.new_customers|ar_digits }}<small> نفر</small></div>
+            <div class="kpi__foot">
+                <span class="kpi__delta{% if stats.new_customers_delta > 0 %} kpi__delta--up{% elif stats.new_customers_delta < 0 %} kpi__delta--down{% else %} kpi__delta--flat{% endif %}" id="kpi-customers-delta">{{ stats.new_customers_delta|ar_digits }}٪</span>
+                <span data-period-label>در {{ stats.days|ar_digits }} روز اخیر</span>
+            </div>
+        </article>
+    </div>
+
+    {# ── sales trend + order mix ─────────────────────────────────────────── #}
+    <div class="dash-grid">
+        <section class="panel">
+            <div class="panel__head">
+                <h2 class="panel__title"><svg aria-hidden="true"><use href="#i-trend"/></svg>روند فروش</h2>
+                <div class="panel__tools">
+                    <span class="adm-pill adm-pill--brass adm-pill--plain" id="sales-total">…</span>
+                </div>
+            </div>
+            <div class="panel__body">
+                <div class="dash-chart" id="salesChart" role="img" aria-label="نمودار فروش روزانه">
+                    <div class="dash-empty">
+                        <svg aria-hidden="true"><use href="#i-trend"/></svg>
+                        در حال آماده‌سازی نمودار…
+                    </div>
+                </div>
+                <div class="chart-legend">
+                    <span><i style="background:var(--chart-1)"></i>فروش روزانه (تومان)</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="panel__head">
+                <h2 class="panel__title"><svg aria-hidden="true"><use href="#i-layers"/></svg>ترکیب سفارش‌ها</h2>
+            </div>
+            <div class="panel__body">
+                <div class="donut-wrap" id="statusChart">
+                    <div class="dash-empty">
+                        <svg aria-hidden="true"><use href="#i-layers"/></svg>
+                        در حال بارگذاری…
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    {# ── recent orders + low stock ───────────────────────────────────────── #}
+    <div class="dash-grid dash-grid--even">
+        <section class="panel">
+            <div class="panel__head">
+                <h2 class="panel__title"><svg aria-hidden="true"><use href="#i-receipt"/></svg>آخرین سفارش‌ها</h2>
+                <div class="panel__tools">
+                    <a class="panel__link" href="{% url 'admin:Cart_Module_order_changelist' %}">همه سفارش‌ها ›</a>
+                </div>
+            </div>
+            <div class="panel__body panel__body--flush">
+                <div class="queue">
+                    {% for order in recent_orders %}
+                    <a class="queue-item" href="{% url 'admin:Cart_Module_order_change' order.id %}">
+                        <span class="queue-item__avatar" aria-hidden="true">{{ order.full_name|slice:":1" }}</span>
+                        <span class="queue-item__main">
+                            <strong>{{ order.full_name|default:"مشتری مهمان" }}</strong>
+                            <span class="queue-item__meta">
+                                <span>#{{ order.order_number }}</span>
+                                <span aria-hidden="true">·</span>
+                                <span>{{ order.created_at|to_jalali }}</span>
+                                <span class="adm-pill adm-pill--{{ order.status|status_tone }}">{{ order.status|status_label }}</span>
+                            </span>
+                        </span>
+                        <span class="queue-item__amount">{{ order.total|toman }}</span>
+                    </a>
+                    {% empty %}
+                    <div class="dash-empty">
+                        <svg aria-hidden="true"><use href="#i-receipt"/></svg>
+                        هنوز سفارشی ثبت نشده است
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="panel__head">
+                <h2 class="panel__title"><svg aria-hidden="true"><use href="#i-alert"/></svg>موجودی رو به پایان</h2>
+                <div class="panel__tools">
+                    <a class="panel__link" href="{% url 'admin:Products_Module_product_changelist' %}?stock_level=low">مدیریت انبار ›</a>
+                </div>
+            </div>
+            <div class="panel__body panel__body--flush">
+                <div class="stock-list">
+                    {% for product in low_stock %}
+                    <div class="stock-item">
+                        <span class="stock-item__thumb adm-thumb adm-thumb--empty" aria-hidden="true">آریو</span>
+                        <span class="stock-item__body">
+                            <a class="stock-item__name" href="{% url 'admin:Products_Module_product_change' product.id %}">{{ product.name }}</a>
+                            <span class="stock-item__meta">{{ product.category.name|default:"بدون دسته" }}</span>
+                        </span>
+                        <span class="stock-bar" aria-hidden="true">
+                            <span class="stock-bar__fill{% if product.stock == 0 %} is-out{% elif product.stock <= 2 %} is-low{% endif %}" style="width: {% widthratio product.stock 5 100 %}%"></span>
+                        </span>
+                        <span class="stock-item__count">{{ product.stock|ar_digits }}</span>
+                    </div>
+                    {% empty %}
+                    <div class="dash-empty">
+                        <svg aria-hidden="true"><use href="#i-check"/></svg>
+                        موجودی همه محصولات سالم است
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+    </div>
+
+    {# ── best sellers + today's queue ────────────────────────────────────── #}
+    <div class="dash-grid dash-grid--even">
+        <section class="panel">
+            <div class="panel__head">
+                <h2 class="panel__title"><svg aria-hidden="true"><use href="#i-star"/></svg>پرفروش‌ترین محصولات</h2>
+            </div>
+            <div class="panel__body panel__body--flush">
+                <table class="mini-table">
+                    <thead>
+                        <tr>
+                            <th>محصول</th>
+                            <th class="num">فروش</th>
+                            <th>درآمد</th>
+                        </tr>
+                    </thead>
+                    <tbody id="topProductsBody">
+                        {% for product in top_products %}
+                        <tr>
+                            <td>{{ product.name }}</td>
+                            <td class="num">{{ product.sold|ar_digits }}</td>
+                            <td class="money">{{ product.revenue|toman }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="dash-empty">به‌اندازه کافی فروش ثبت نشده است</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="panel__head">
+                <h2 class="panel__title"><svg aria-hidden="true"><use href="#i-clock"/></svg>کارهای در انتظار</h2>
+            </div>
+            <div class="panel__body panel__body--flush">
+                <div class="queue">
+                    {% for item in alerts.items %}
+                    <a class="queue-item" href="{{ item.url }}">
+                        <span class="adm-notif__icon adm-tone--{{ item.tone }}" aria-hidden="true">
+                            <svg aria-hidden="true"><use href="#i-{{ item.icon }}"/></svg>
+                        </span>
+                        <span class="queue-item__main">
+                            <strong>{{ item.label }}</strong>
+                            <span class="queue-item__meta">{% if item.count %}برای بررسی کلیک کنید{% else %}موردی وجود ندارد{% endif %}</span>
+                        </span>
+                        <span class="queue-item__amount">{{ item.count|ar_digits }}</span>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+    </div>
+
+    {# ── module shortcuts ────────────────────────────────────────────────── #}
+    <section class="panel">
+        <div class="panel__head">
+            <h2 class="panel__title"><svg aria-hidden="true"><use href="#i-layers"/></svg>دسترسی سریع به ماژول‌ها</h2>
+        </div>
+        <div class="module-grid">
+            {% for group in nav_groups %}
+            {% for app in group.apps %}
+            <div class="module-card">
+                <div class="module-card__head">
+                    <svg aria-hidden="true"><use href="#i-{{ app.models.0.icon|default:'file' }}"/></svg>
+                    <span class="module-card__title">{{ app.title }}</span>
+                    <span class="module-card__count">{{ app.models|length|ar_digits }}</span>
+                </div>
+                <div class="module-card__links">
+                    {% for model in app.models %}{% if model.url %}
+                    <a class="module-card__link" href="{{ model.url }}">
+                        <span>{{ model.name }}</span>
+                        {% if model.add_url %}
+                        <span class="module-card__add" role="img" aria-label="افزودن {{ model.name }}">+</span>
+                        {% endif %}
+                    </a>
+                    {% endif %}{% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+            {% endfor %}
+        </div>
+    </section>
+
+</div>
+{% endblock %}
+
+{# the dashboard supplies its own activity panels; drop django's floated sidebar #}
+{% block sidebar %}{% endblock %}

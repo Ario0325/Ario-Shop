@@ -1,0 +1,115 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   آریو شاپ — پنل مدیریت
+   تم Sunset Orange (غروب نارنجی) — تیره با گرمای رنگی
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+    /* رنگ‌های اصلی نارنجی - غروب آفتاب */
+    --ap-primary:       #f97316;
+    --ap-primary-dark:  #ea580c;
+    --ap-primary-light: #fb923c;
+    --ap-primary-glow:  rgba(249, 115, 22, 0.25);
+    
+    --ap-accent:        #fdba74;
+    --ap-accent-glow:   rgba(253, 186, 116, 0.2);
+    --ap-accent-light:  #ffedd5;
+    
+    /* رنگ‌های مکمل */
+    --ap-success:       #22c55e;
+    --ap-warning:       #f59e0b;
+    --ap-danger:        #ef4444;
+    --ap-info:          #06b6d4;
+    
+    /* رنگ‌های پس‌زمینه تیره - شب غروبی */
+    --ap-bg:            #1a0f0a;
+    --ap-surface:       #1c120b;
+    --ap-surface-2:    #2a1a12;
+    --ap-card:          #1f140d;
+    --ap-card-hover:    #2a1a12;
+    --ap-border:        rgba(253, 186, 116, 0.08);
+    --ap-border-focus:  rgba(249, 115, 22, 0.5);
+    
+    /* متن */
+    --ap-text:          #fff7ed;
+    --ap-text-muted:    #fdba74;
+    --ap-text-dim:      #fed7aa;
+    
+    /* سایه و شعاع */
+    --ap-shadow-sm:     0 4px 12px rgba(0, 0, 0, 0.5);
+    --ap-shadow-md:     0 8px 24px rgba(0, 0, 0, 0.6);
+    --ap-shadow-lg:     0 16px 48px rgba(0, 0, 0, 0.7);
+    --ap-shadow-glow:   0 0 30px rgba(249, 115, 22, 0.15);
+    
+    --ap-radius-sm:     8px;
+    --ap-radius-md:     12px;
+    --ap-radius-lg:     16px;
+    --ap-radius-xl:     24px;
+    
+    --ap-transition:    all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* شناسه تم */
+    --theme-id:         'sunset-orange';
+    --theme-name:       'غروب نارنجی';
+    --theme-is-dark:    true;
+}
+
+/* تنظیمات اضافی برای جلوه‌های نارنجی */
+#header {
+    background: linear-gradient(135deg, #1c120b 0%, #1a0f0a 100%) !important;
+    border-bottom: 1px solid var(--ap-border) !important;
+}
+
+/* گرادینت ویژه برای دکمه‌های اصلی */
+.button, .submit-row input, [type="submit"], .btn {
+    background: linear-gradient(135deg, #f97316 0%, #ea580c 100%) !important;
+    border: none !important;
+    box-shadow: 0 4px 14px rgba(249, 115, 22, 0.3) !important;
+}
+
+.button:hover, .submit-row input:hover, [type="submit"]:hover, .btn:hover {
+    background: linear-gradient(135deg, #fb923c 0%, #f97316 100%) !important;
+    box-shadow: 0 6px 20px rgba(249, 115, 22, 0.4) !important;
+    transform: translateY(-2px);
+}
+
+/* لینک‌ها با رنگ نارنجی */
+a:link, a:visited {
+    color: #fb923c !important;
+}
+
+a:hover {
+    color: #fdba74 !important;
+}
+
+/* هاور ماژول‌ها */
+.module:hover {
+    border-right: 3px solid #f97316 !important;
+    box-shadow: 0 8px 30px rgba(249, 115, 22, 0.15) !important;
+}
+
+/* جدول‌ها */
+table thead th {
+    background: linear-gradient(135deg, #1c120b 0%, #2a1a12 100%) !important;
+    border-bottom: 2px solid #f97316 !important;
+}
+
+/* فیلتر سایدبار */
+#changelist-filter {
+    border-right: 3px solid #f97316 !important;
+}
+
+/* پیام‌های موفقیت */
+.messagelist .success {
+    border-right: 4px solid #22c55e !important;
+    background: rgba(34, 197, 94, 0.1) !important;
+}
+
+/* انیمیشن‌های ویژه */
+@keyframes sunsetGlow {
+    0%, 100% { box-shadow: 0 0 20px rgba(249, 115, 22, 0.2); }
+    50% { box-shadow: 0 0 40px rgba(249, 115, 22, 0.4); }
+}
+
+.module {
+    animation: sunsetGlow 3s ease-in-out infinite;
+}

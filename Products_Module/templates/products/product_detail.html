@@ -1,0 +1,450 @@
+{% extends 'shared/base.html' %}
+{% load static %}
+{% load number_tags %}
+{% load math_filters %}
+{% load persian_date_tags %}
+
+{% block title %}{{ product.name }} | آریو شاپ{% endblock %}
+{% block meta_description %}{{ product.description|default:product.name|truncatewords:28 }}{% endblock %}
+{% block og_title %}{{ product.name }} | آریو شاپ{% endblock %}
+{% block og_description %}{{ product.description|default:product.name|truncatewords:24 }}{% endblock %}
+{% block og_type %}product{% endblock %}
+{% block og_image %}{% if product_images.0 %}{{ request.scheme }}://{{ request.get_host }}{{ product_images.0.image.url }}{% endif %}{% endblock %}
+
+{% block content %}
+{% url 'products:list' as shop_url %}
+
+<div class="ar-container">
+    <div class="ar-between">
+        {% if product.category %}
+            {% include 'shared/breadcrumbs.html' with crumb1_title="فروشگاه" crumb1_url=shop_url crumb2_title=product.category.name crumb2_url=product.category.get_absolute_url crumb_last=product.name|truncatechars:32 %}
+        {% else %}
+            {% include 'shared/breadcrumbs.html' with crumb1_title="فروشگاه" crumb1_url=shop_url crumb_last=product.name|truncatechars:32 %}
+        {% endif %}
+
+        <nav class="ar-cluster" aria-label="محصول قبلی و بعدی">
+            {% if prev_product %}
+            <a class="ar-btn ar-btn--outline ar-btn--icon ar-btn--sm" href="{{ prev_product.get_absolute_url }}"
+               aria-label="محصول قبلی: {{ prev_product.name }}" title="محصول قبلی">
+                <i class="icon-angle-right" aria-hidden="true"></i>
+            </a>
+            {% endif %}
+            {% if next_product %}
+            <a class="ar-btn ar-btn--outline ar-btn--icon ar-btn--sm" href="{{ next_product.get_absolute_url }}"
+               aria-label="محصول بعدی: {{ next_product.name }}" title="محصول بعدی">
+                <i class="icon-angle-left" aria-hidden="true"></i>
+            </a>
+            {% endif %}
+        </nav>
+    </div>
+</div>
+
+<div class="ar-container">
+    <div class="ar-pdp">
+
+        <!-- ── گالری ─────────────────────────────────────────────────────── -->
+        <div class="ar-gallery{% if not product_images %} ar-gallery--single{% endif %}" data-ar-gallery>
+            {% if product_images %}
+            <div class="ar-gallery__thumbs" aria-label="تصاویر محصول">
+                {% for image in product_images %}
+                <button type="button" class="ar-gallery__thumb{% if forloop.first %} is-active{% endif %}"
+                        data-ar-thumb aria-label="نمایش تصویر {{ forloop.counter }}"
+                        aria-current="{% if forloop.first %}true{% else %}false{% endif %}">
+                    <img src="{{ image.image.url }}" alt="" width="84" height="105" loading="lazy" decoding="async">
+                </button>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div>
+                <div class="ar-gallery__main">
+                    <div class="ar-gallery__track" data-ar-gallery-track>
+                        {% for image in product_images %}
+                        <div class="ar-gallery__slide">
+                            <img src="{{ image.image.url }}"
+                                 alt="{{ image.alt_text|default:product.name }}"
+                                 data-full="{{ image.image.url }}" width="800" height="1000"
+                                 {% if forloop.first %}fetchpriority="high"{% else %}loading="lazy"{% endif %}
+                                 decoding="async">
+                        </div>
+                        {% empty %}
+                        <div class="ar-gallery__slide">
+                            <img src="{% static 'assets/images/v2/placeholder-product.webp' %}"
+                                 alt="{{ product.name }}"
+                                 data-full="{% static 'assets/images/v2/placeholder-product.webp' %}"
+                                 width="800" height="1000" decoding="async">
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="ar-gallery__badges">
+                        {% if not product.is_available or product.stock <= 0 %}
+                        <span class="ar-badge ar-badge--danger">ناموجود</span>
+                        {% elif product.label %}
+                        <span class="ar-badge ar-badge--gold">{{ product.get_label_display }}</span>
+                        {% elif product.old_price %}
+                        <span class="ar-badge ar-badge--danger">{{ product.discount_percentage|ar_digits }}٪ تخفیف</span>
+                        {% endif %}
+                    </div>
+
+                    {% if product_images|length > 1 %}
+                    <button type="button" class="ar-gallery__zoom" data-ar-zoom-open>
+                        <i class="icon-search-plus" aria-hidden="true"></i>
+                        بزرگ‌نمایی
+                    </button>
+                    {% endif %}
+                </div>
+
+                {% if product_images|length > 1 %}
+                <div class="ar-gallery__dots" aria-hidden="true">
+                    {% for image in product_images %}
+                    <button type="button" class="ar-gallery__dot{% if forloop.first %} is-active{% endif %}"
+                            data-ar-dot tabindex="-1"></button>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- ── ستون خرید ─────────────────────────────────────────────────── -->
+        <div class="ar-buybox">
+            {% if product.brand %}
+            <span class="ar-buybox__brand">
+                برند:
+                <a href="{{ shop_url }}?brand={{ product.brand.slug }}">{{ product.brand.name }}</a>
+            </span>
+            {% endif %}
+
+            <h1 class="ar-pdp__title">{{ product.name }}</h1>
+
+            <div class="ar-buybox__meta">
+                {% if product.is_available and product.stock > 0 %}
+                <span class="ar-stock">
+                    موجود{% if product.stock < 10 %} — تنها {{ product.stock|ar_digits }} عدد{% endif %}
+                </span>
+                {% else %}
+                <span class="ar-stock ar-stock--out">ناموجود</span>
+                {% endif %}
+
+                <span class="ar-stars">
+                    <span class="ratings" role="img"
+                          aria-label="امتیاز {{ product.get_rating_percentage|ar_digits }} درصد">
+                        <span class="ratings-val" style="width: {{ product.get_rating_percentage }}%;"></span>
+                    </span>
+                    <a href="#product-tabs" data-ar-goto-tab="reviews" data-ar-tab-scroll="product-tabs">
+                        {{ reviews|length|ar_digits }} نظر
+                    </a>
+                </span>
+
+                {% if product.views_count %}
+                <span class="ar-toolbar__count">{{ product.views_count|ar_digits }} بازدید</span>
+                {% endif %}
+            </div>
+
+            <div class="ar-price-lg">
+                {% if product.old_price and product.is_available %}
+                <span class="ar-price-lg__now">{{ product.price|toman }}</span>
+                <span class="ar-price-lg__old">{{ product.old_price|toman }}</span>
+                <span class="ar-price-lg__off">{{ product.discount_percentage|ar_digits }}٪ تخفیف</span>
+                {% elif product.is_available %}
+                <span class="ar-price-lg__now">{{ product.price|toman }}</span>
+                {% else %}
+                <span class="ar-price-lg__now" style="color:var(--faint)">{{ product.price|toman }}</span>
+                <span class="ar-price-lg__off">برای اطلاع از موجودی تماس بگیرید</span>
+                {% endif %}
+            </div>
+
+            {% if product.description %}
+            <p class="ar-pdp__short">{{ product.description|truncatewords:42 }}</p>
+            {% endif %}
+
+            {% if product_colors %}
+            <div class="ar-variant" data-ar-variant>
+                <span class="ar-variant__label">
+                    رنگ
+                    <span data-ar-variant-output>{{ product_colors.0.name }}</span>
+                </span>
+                <div class="ar-swatches">
+                    {% for color in product_colors %}
+                    <label class="ar-swatch{% if forloop.first %} is-active{% endif %}"
+                           style="--sw: {{ color.code }};" title="{{ color.name }}">
+                        <input type="radio" name="color" value="{{ color.name }}" data-label="{{ color.name }}"
+                               {% if forloop.first %}checked{% endif %}>
+                        <span class="ar-sr-only">رنگ {{ color.name }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if product_sizes %}
+            <div class="ar-variant" data-ar-variant>
+                <span class="ar-variant__label">
+                    سایز
+                    <span data-ar-variant-output>{{ product_sizes.0.get_size_display }}</span>
+                </span>
+                <div class="ar-sizes">
+                    {% for size in product_sizes %}
+                    <label class="ar-size{% if forloop.first %} is-active{% endif %}">
+                        <input type="radio" name="size" value="{{ size.get_size_display }}"
+                               data-label="{{ size.get_size_display }}" {% if forloop.first %}checked{% endif %}>
+                        <span>{{ size.get_size_display }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if product.is_available and product.stock > 0 %}
+            <form id="ar-product-form" action="{% url 'cart:add' product.id %}" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <div class="ar-buyrow">
+                    <div class="ar-qty" data-ar-qty>
+                        <button type="button" data-qty-step="-1" aria-label="کاهش تعداد">
+                            <i class="icon-minus" aria-hidden="true"></i>
+                        </button>
+                        <label class="ar-sr-only" for="pdp-qty">تعداد</label>
+                        <input id="pdp-qty" type="text" inputmode="numeric" pattern="[0-9]*"
+                               name="quantity" value="1" min="1" max="{{ product.stock }}"
+                               data-qty-input autocomplete="off" required>
+                        <button type="button" data-qty-step="1" aria-label="افزایش تعداد">
+                            <i class="icon-plus" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <button type="submit" class="ar-btn ar-btn--primary" data-ar-submit>
+                        <i class="icon-shopping-cart" aria-hidden="true"></i>
+                        افزودن به سبد خرید
+                    </button>
+                </div>
+            </form>
+            {% else %}
+            <div class="ar-note ar-note--danger">
+                <i class="icon-info-circle" aria-hidden="true"></i>
+                این محصول در حال حاضر ناموجود است. می‌توانید محصولات مشابه را ببینید.
+            </div>
+            {% endif %}
+
+            <div class="ar-buybox__perks">
+                <div class="ar-perk">
+                    <i class="icon-truck" aria-hidden="true"></i>
+                    <span><b>ارسال سریع:</b> تهران ۲۴ ساعته، شهرستان ۲ تا ۴ روز کاری.</span>
+                </div>
+                <div class="ar-perk">
+                    <i class="icon-certificate" aria-hidden="true"></i>
+                    <span><b>ضمانت اصالت:</b> همه کالاها پیش از ارسال بررسی می‌شوند.</span>
+                </div>
+                <div class="ar-perk">
+                    <i class="icon-rotate-left" aria-hidden="true"></i>
+                    <span><b>بازگشت ۷ روزه:</b> بدون قید و شرط، هزینه بازگشت با ما.</span>
+                </div>
+            </div>
+
+            <form action="{% url 'cart:discount_apply' %}" method="post" class="ar-coupon">
+                {% csrf_token %}
+                <label class="ar-sr-only" for="pdp-discount">کد تخفیف</label>
+                <div class="ar-coupon__row">
+                    <input id="pdp-discount" type="text" name="code" maxlength="50"
+                           autocomplete="off" placeholder="کد تخفیف دارید؟" required>
+                    <button type="submit" class="ar-btn ar-btn--outline">
+                        <i class="icon-tag" aria-hidden="true"></i>
+                        اعمال
+                    </button>
+                </div>
+            </form>
+
+            <div class="ar-buybox__meta">
+                {% if product.category %}
+                <span>دسته‌بندی: <a href="{{ product.category.get_absolute_url }}">{{ product.category.name }}</a></span>
+                {% endif %}
+                {% if product.brand %}
+                <span>برند: <a href="{{ shop_url }}?brand={{ product.brand.slug }}">{{ product.brand.name }}</a></span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ── تب‌ها ─────────────────────────────────────────────────────────── -->
+    <div class="ar-pdp-tabs" id="product-tabs" data-ar-tabwrap>
+        <div class="ar-tabs" role="tablist" aria-label="اطلاعات محصول" data-ar-tabs>
+            <button type="button" class="ar-tab{% if not request.GET.review_submitted %} is-active{% endif %}"
+                    id="tab-desc" role="tab" aria-controls="panel-desc" data-ar-tab="desc"
+                    aria-selected="{% if not request.GET.review_submitted %}true{% else %}false{% endif %}"
+                    tabindex="{% if not request.GET.review_submitted %}0{% else %}-1{% endif %}">
+                توضیحات
+            </button>
+            <button type="button" class="ar-tab"
+                    id="tab-specs" role="tab" aria-controls="panel-specs" data-ar-tab="specs"
+                    aria-selected="false" tabindex="-1">
+                مشخصات
+            </button>
+            <button type="button" class="ar-tab"
+                    id="tab-shipping" role="tab" aria-controls="panel-shipping" data-ar-tab="shipping"
+                    aria-selected="false" tabindex="-1">
+                ارسال و بازگشت
+            </button>
+            <button type="button" class="ar-tab{% if request.GET.review_submitted %} is-active{% endif %}"
+                    id="tab-reviews" role="tab" aria-controls="panel-reviews" data-ar-tab="reviews"
+                    aria-selected="{% if request.GET.review_submitted %}true{% else %}false{% endif %}"
+                    tabindex="{% if request.GET.review_submitted %}0{% else %}-1{% endif %}">
+                نظرات ({{ reviews|length|ar_digits }})
+            </button>
+        </div>
+
+        <div class="ar-panel ar-tabpanel{% if not request.GET.review_submitted %} is-active{% endif %}"
+             id="panel-desc" role="tabpanel" aria-labelledby="tab-desc" data-ar-panel="desc"
+             {% if request.GET.review_submitted %}hidden{% endif %}>
+            <div class="ar-prose">
+                {{ product.full_description|default:product.description|linebreaks }}
+            </div>
+        </div>
+
+        <div class="ar-panel ar-tabpanel" id="panel-specs" role="tabpanel" aria-labelledby="tab-specs"
+             data-ar-panel="specs" hidden>
+            <div class="ar-prose">
+                {% if product.additional_info %}
+                {{ product.additional_info|linebreaks }}
+                {% else %}
+                <ul>
+                    {% if product.brand %}<li>برند: {{ product.brand.name }}</li>{% endif %}
+                    {% if product.category %}<li>دسته‌بندی: {{ product.category.name }}</li>{% endif %}
+                    {% if product_sizes %}<li>سایزهای موجود: {% for size in product_sizes %}{{ size.get_size_display }}{% if not forloop.last %}، {% endif %}{% endfor %}</li>{% endif %}
+                    {% if product_colors %}<li>رنگ‌های موجود: {% for color in product_colors %}{{ color.name }}{% if not forloop.last %}، {% endif %}{% endfor %}</li>{% endif %}
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="ar-panel ar-tabpanel" id="panel-shipping" role="tabpanel" aria-labelledby="tab-shipping"
+             data-ar-panel="shipping" hidden>
+            <div class="ar-prose">
+                {% if product.shipping_info %}
+                {{ product.shipping_info|linebreaks }}
+                {% else %}
+                <p>ارسال به سراسر ایران؛ تهران ۲۴ ساعته و شهرستان‌ها ۲ تا ۴ روز کاری.</p>
+                <p>امکان بازگشت کالا تا ۷ روز پس از تحویل، در صورت سالم بودن بسته‌بندی.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="ar-panel ar-tabpanel" id="panel-reviews" role="tabpanel" aria-labelledby="tab-reviews"
+             data-ar-panel="reviews" {% if not request.GET.review_submitted %}hidden{% endif %}>
+            <div class="ar-reviews">
+                <div class="ar-reviewsum">
+                    <span class="ar-reviewsum__score">{{ product.get_rating_percentage|ar_digits }}<small>٪</small></span>
+                    <div class="ar-stars" aria-hidden="true">
+                        <i class="icon-star" aria-hidden="true"></i>
+                        <i class="icon-star" aria-hidden="true"></i>
+                        <i class="icon-star" aria-hidden="true"></i>
+                        <i class="icon-star" aria-hidden="true"></i>
+                        <i class="icon-star-o" aria-hidden="true"></i>
+                    </div>
+                    <p class="ar-reviewsum__count">بر اساس {{ reviews|length|ar_digits }} نظر تأییدشده</p>
+                </div>
+
+                <div class="ar-reviewlist">
+                    {% for review in reviews %}
+                    <article class="ar-review">
+                        <div class="ar-review__head">
+                            <div class="ar-review__who">
+                                <span class="ar-review__avatar" aria-hidden="true">{{ review.name|first }}</span>
+                                <div>
+                                    <div class="ar-review__name">{{ review.name }}</div>
+                                    <div class="ar-review__date">{{ review.created_at|time_ago_persian }}</div>
+                                </div>
+                            </div>
+                            <span class="ratings" role="img" aria-label="امتیاز {{ review.rating|ar_digits }} از ۵">
+                                <span class="ratings-val" style="width: {{ review.rating|mul:20 }}%;"></span>
+                            </span>
+                        </div>
+                        {% if review.title %}<h3 class="ar-review__title">{{ review.title }}</h3>{% endif %}
+                        <p class="ar-review__body">{{ review.comment|linebreaksbr }}</p>
+                    </article>
+                    {% empty %}
+                    <div class="ar-empty">
+                        <span class="ar-empty__icon"><i class="icon-comment-o" aria-hidden="true"></i></span>
+                        <p><strong>هنوز نظری ثبت نشده است</strong> اولین نفر باشید که تجربه‌اش را می‌نویسد.</p>
+                    </div>
+                    {% endfor %}
+
+                    <div class="ar-reviewform">
+                        <h3 class="ar-reviewform__title">ثبت نظر جدید</h3>
+                        <form action="{% url 'products:detail' product.slug %}" method="post" data-ar-validate>
+                            {% csrf_token %}
+                            <input type="hidden" name="submit_review" value="1">
+                            <div class="ar-grid ar-grid--2">
+                                <div class="ar-field">
+                                    <label for="{{ review_form.name.id_for_label }}">{{ review_form.name.label }}</label>
+                                    {{ review_form.name }}
+                                    {% if review_form.name.errors %}<p class="ar-error">{{ review_form.name.errors.0 }}</p>{% endif %}
+                                </div>
+                                <div class="ar-field">
+                                    <label for="{{ review_form.email.id_for_label }}">{{ review_form.email.label }}</label>
+                                    {{ review_form.email }}
+                                    {% if review_form.email.errors %}<p class="ar-error">{{ review_form.email.errors.0 }}</p>{% endif %}
+                                </div>
+                                <div class="ar-field">
+                                    <label for="{{ review_form.rating.id_for_label }}">{{ review_form.rating.label }}</label>
+                                    {{ review_form.rating }}
+                                    {% if review_form.rating.errors %}<p class="ar-error">{{ review_form.rating.errors.0 }}</p>{% endif %}
+                                </div>
+                                <div class="ar-field">
+                                    <label for="{{ review_form.title.id_for_label }}">{{ review_form.title.label }}</label>
+                                    {{ review_form.title }}
+                                    {% if review_form.title.errors %}<p class="ar-error">{{ review_form.title.errors.0 }}</p>{% endif %}
+                                </div>
+                                <div class="ar-field">
+                                    <label for="{{ review_form.comment.id_for_label }}">{{ review_form.comment.label }}</label>
+                                    {{ review_form.comment }}
+                                    {% if review_form.comment.errors %}<p class="ar-error">{{ review_form.comment.errors.0 }}</p>{% endif %}
+                                </div>
+                            </div>
+                            <div class="ar-note mt-4">
+                                <i class="icon-info-circle" aria-hidden="true"></i>
+                                نظر شما پس از تأیید در همین صفحه نمایش داده می‌شود.
+                            </div>
+                            <button type="submit" class="ar-btn ar-btn--primary mt-4" data-ar-submit>
+                                <i class="icon-check" aria-hidden="true"></i>
+                                ثبت نظر
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if related_products %}
+    <section class="ar-section--tight">
+        {% include 'shared/section_head.html' with title="محصولاتی که شاید بپسندید" eyebrow="پیشنهاد آریو" desc="بر اساس دسته‌بندی همین محصول انتخاب شده‌اند." more_url=shop_url more_text="همه محصولات" %}
+        <div class="ar-prodgrid">
+            {% for related in related_products %}
+            {% include 'shared/product_card.html' with product=related %}
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+</div>
+
+<dialog class="ar-zoom" id="ar-zoom" aria-label="نمایش بزرگ تصویر محصول">
+    <button type="button" class="ar-zoom__close" data-ar-zoom-close aria-label="بستن">
+        <i class="icon-times" aria-hidden="true"></i>
+    </button>
+    <img alt="">
+</dialog>
+{% endblock %}
+
+{% block page_overlays %}
+{% if product.is_available and product.stock > 0 %}
+<div class="ar-buybar">
+    <div class="ar-buybar__price">
+        <small>{{ product.name|truncatechars:28 }}</small>
+        <b>{{ product.price|toman }}</b>
+    </div>
+    <button type="button" class="ar-btn ar-btn--primary" data-ar-buybar-add>
+        <i class="icon-shopping-cart" aria-hidden="true"></i>
+        افزودن به سبد
+    </button>
+</div>
+{% endif %}
+{% endblock %}

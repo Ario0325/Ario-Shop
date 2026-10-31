@@ -1,0 +1,279 @@
+{% extends 'shared/base.html' %}
+{% load static %}
+{% load number_tags %}
+
+{% block title %}آریو شاپ | منتخبی از پوشاک، کیف و اکسسوری{% endblock %}
+{% block meta_description %}خرید آنلاین از آریو شاپ؛ منتخبی از پوشاک، کیف و اکسسوری با ضمانت اصالت، ارسال سریع و بازگشت ۷ روزه کالا.{% endblock %}
+{% block extra_css %}
+<link rel="preload" as="image"
+      href="{% static 'assets/images/v2/hero-main.webp' %}"
+      imagesrcset="{% static 'assets/images/v2/hero-main-640.webp' %} 640w, {% static 'assets/images/v2/hero-main.webp' %} 778w"
+      imagesizes="(max-width: 768px) 100vw, (max-width: 1024px) 100vw, 58vw"
+      fetchpriority="high">
+{% endblock %}
+
+{% block content %}
+
+<!-- ══ هیرو بنتو ══════════════════════════════════════════════════════════ -->
+<section class="ar-container">
+    <div class="ar-hero">
+        <div class="ar-bento">
+
+            <a class="ar-tile ar-tile--hero ar-bento__main" href="{% url 'products:list' %}" data-ar-reveal>
+                <img class="ar-tile__img"
+                     src="{% static 'assets/images/v2/hero-main.webp' %}"
+                     srcset="{% static 'assets/images/v2/hero-main-640.webp' %} 640w, {% static 'assets/images/v2/hero-main.webp' %} 778w"
+                     sizes="(max-width: 768px) 100vw, (max-width: 1024px) 100vw, 58vw"
+                     alt="بافت تور و پارچه در کالکشن آریو شاپ" width="778" height="640"
+                     fetchpriority="high" decoding="async">
+                <span class="ar-tile__veil" aria-hidden="true"></span>
+                <span class="ar-tile__flag"><i class="icon-star" aria-hidden="true"></i> کالکشن ۱۴۰۵</span>
+                <span class="ar-tile__body">
+                    <span class="ar-tile__eyebrow">فصل تازه، رنگ تازه</span>
+                    <h1 class="ar-tile__title">لطافت آلویی،<br>در هر تار و پود</h1>
+                    <span class="ar-tile__cta">دیدن کالکشن <i class="icon-long-arrow-left" aria-hidden="true"></i></span>
+                </span>
+            </a>
+
+            <div class="ar-bento__panel" data-ar-reveal data-ar-delay="1">
+                <div>
+                    <span class="ar-tile__eyebrow">چرا آریو شاپ؟</span>
+                    <h2 class="ar-bento__title">انتخابی که <em>شبیه شماست</em></h2>
+                    <p class="ar-bento__text">
+                        هر محصول را با دقت انتخاب می‌کنیم؛ از جنس پارچه تا دوخت و
+                        بسته‌بندی. خرید شما باید همان‌قدر خوب باشد که انتظار دارید.
+                    </p>
+                </div>
+                <div>
+                    <div class="ar-bento__actions">
+                        <a class="ar-btn ar-btn--gold" href="{% url 'products:list' %}">
+                            شروع خرید <i class="icon-long-arrow-left" aria-hidden="true"></i>
+                        </a>
+                        <a class="ar-btn ar-btn--ghost-light" href="{% url 'AboutUs_Module:about' %}">قصه آریو</a>
+                    </div>
+                    <div class="ar-bento__meta">
+                        <div class="ar-bento__stat"><b>+۱۲۰۰</b><span>محصول منتخب</span></div>
+                        <div class="ar-bento__stat"><b>+۸۵۰۰</b><span>مشتری راضی</span></div>
+                        <div class="ar-bento__stat"><b>۷ روز</b><span>ضمانت بازگشت</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ar-bento__pair">
+                <a class="ar-tile" href="{% url 'products:list' %}" data-ar-reveal data-ar-delay="2">
+                    <img class="ar-tile__img" src="{% static 'assets/images/v2/bento-edit.webp' %}"
+                         alt="کالکشن کیف و اکسسوری" width="370" height="320" loading="lazy" decoding="async">
+                    <span class="ar-tile__veil" aria-hidden="true"></span>
+                    <span class="ar-tile__body">
+                        <span class="ar-tile__eyebrow">کیف و اکسسوری</span>
+                        <span class="ar-tile__title">جزئیاتِ تمام‌کننده</span>
+                    </span>
+                </a>
+                <a class="ar-tile" href="{% url 'products:list' %}" data-ar-reveal data-ar-delay="3">
+                    <img class="ar-tile__img" src="{% static 'assets/images/v2/bento-wide.webp' %}"
+                         alt="پیشنهادهای ویژه آریو شاپ" width="280" height="280" loading="lazy" decoding="async">
+                    <span class="ar-tile__veil" aria-hidden="true"></span>
+                    <span class="ar-tile__body">
+                        <span class="ar-tile__eyebrow">پیشنهاد امروز</span>
+                        <span class="ar-tile__title">تا ۴۰٪ تخفیف</span>
+                    </span>
+                </a>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- ══ نوار تعهدها ═════════════════════════════════════════════════════════ -->
+<div class="ar-marquee">
+    <div class="ar-marquee__track">
+        <span class="ar-marquee__item"><i class="icon-truck" aria-hidden="true"></i> ارسال رایگان سفارش‌های بالای ۵۰۰ هزار تومان</span>
+        <span class="ar-marquee__item"><i class="icon-rotate-left" aria-hidden="true"></i> بازگشت ۷ روزه، بدون قید و شرط</span>
+        <span class="ar-marquee__item"><i class="icon-certificate" aria-hidden="true"></i> ضمانت اصالت و کیفیت همه کالاها</span>
+        <span class="ar-marquee__item"><i class="icon-headphones" aria-hidden="true"></i> پشتیبانی واقعی، هر روز ۹ تا ۲۱</span>
+        <span class="ar-marquee__item" aria-hidden="true"><i class="icon-truck" aria-hidden="true"></i> ارسال رایگان سفارش‌های بالای ۵۰۰ هزار تومان</span>
+        <span class="ar-marquee__item" aria-hidden="true"><i class="icon-rotate-left" aria-hidden="true"></i> بازگشت ۷ روزه، بدون قید و شرط</span>
+        <span class="ar-marquee__item" aria-hidden="true"><i class="icon-certificate" aria-hidden="true"></i> ضمانت اصالت و کیفیت همه کالاها</span>
+        <span class="ar-marquee__item" aria-hidden="true"><i class="icon-headphones" aria-hidden="true"></i> پشتیبانی واقعی، هر روز ۹ تا ۲۱</span>
+    </div>
+</div>
+
+<!-- ══ دسته‌بندی‌ها ════════════════════════════════════════════════════════ -->
+{% if main_categories %}
+{% url 'products:list' as shop_url %}
+<section class="ar-container ar-section--tight">
+    {% include 'shared/section_head.html' with title="از کجا شروع کنیم؟" eyebrow="دسته‌بندی‌ها" desc="مسیر خریدتان را بر اساس سلیقه‌تان انتخاب کنید." more_url=shop_url more_text="همه محصولات" %}
+    <div class="ar-cats">
+        {% for category in main_categories %}
+        <a class="ar-cat" href="{{ category.get_absolute_url }}" data-ar-reveal>
+            <span class="ar-cat__media">
+                {% if category.image %}
+                <img src="{{ category.image.url }}" alt="{{ category.name }}"
+                     width="240" height="300" loading="lazy" decoding="async">
+                {% else %}
+                <span class="ar-cat__fallback"><i class="icon-tag" aria-hidden="true"></i></span>
+                {% endif %}
+            </span>
+            <span class="ar-cat__name">
+                {{ category.name }}
+                <span class="ar-cat__count">{{ category.active_product_count|ar_digits }} محصول</span>
+            </span>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<!-- ══ تازه‌ها ═════════════════════════════════════════════════════════════ -->
+<section class="ar-container ar-section--tight">
+    {% if new_products %}
+    <div class="ar-shelf" data-ar-shelf-root>
+        <div class="ar-section-head">
+            <div class="ar-section-head__text">
+                <span class="ar-eyebrow">تازه رسیده</span>
+                <h2 class="ar-section-title">جدیدترین محصولات</h2>
+                <p class="ar-section-desc">اولین نفر باشید که تازه‌های این هفته را می‌بیند.</p>
+            </div>
+            <div class="ar-cluster">
+                <div class="ar-shelf__nav">
+                    <button type="button" data-ar-shelf-prev aria-label="محصولات قبلی">
+                        <i class="icon-angle-right" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" data-ar-shelf-next aria-label="محصولات بعدی">
+                        <i class="icon-angle-left" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <a class="ar-link-more" href="{% url 'products:list' %}">
+                    مشاهده همه <i class="icon-long-arrow-left" aria-hidden="true"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="ar-shelf__track" data-ar-shelf>
+            {% for product in new_products %}
+            {% include 'shared/product_card.html' with product=product %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</section>
+
+<!-- ══ داستان + پیشنهاد ═══════════════════════════════════════════════════ -->
+<section class="ar-container ar-section--tight">
+    <div class="ar-split">
+        <a class="ar-split__story ar-tile" href="{% url 'AboutUs_Module:about' %}" data-ar-reveal>
+            <img src="{% static 'assets/images/v2/promo-story.webp' %}"
+                 alt="استایل منتخب از کالکشن آریو شاپ"
+                 width="1600" height="667" loading="lazy" decoding="async">
+            <span class="ar-tile__veil" aria-hidden="true"></span>
+            <span class="ar-tile__body">
+                <span class="ar-tile__eyebrow">پشت صحنه آریو</span>
+                <span class="ar-tile__title">چطور هر قطعه را برای شما انتخاب می‌کنیم؟</span>
+                <span class="ar-tile__cta">خواندن داستان ما <i class="icon-long-arrow-left" aria-hidden="true"></i></span>
+            </span>
+        </a>
+
+        <div class="ar-split__offer" data-ar-reveal data-ar-delay="1">
+            <div>
+                <span class="ar-offer__eyebrow"><i class="icon-gift" aria-hidden="true"></i> پیشنهاد ویژه آخر هفته</span>
+                <h2 class="ar-offer__title">۱۵٪ تخفیف روی منتخب اکسسوری</h2>
+                <p class="ar-offer__text">
+                    تا پایان روز جمعه با کد «<span dir="ltr">ARIO15</span>» روی محصولات منتخب اکسسوری
+                    تخفیف بگیرید. موجودی محدود است.
+                </p>
+            </div>
+            <div data-ar-countdown>
+                <div class="ar-count" role="timer" aria-label="زمان باقی‌مانده تا پایان پیشنهاد">
+                    <div class="ar-count__cell">
+                        <span class="ar-count__num" data-cd="days">۰۰</span>
+                        <span class="ar-count__label">روز</span>
+                    </div>
+                    <div class="ar-count__cell">
+                        <span class="ar-count__num" data-cd="hours">۰۰</span>
+                        <span class="ar-count__label">ساعت</span>
+                    </div>
+                    <div class="ar-count__cell">
+                        <span class="ar-count__num" data-cd="minutes">۰۰</span>
+                        <span class="ar-count__label">دقیقه</span>
+                    </div>
+                    <div class="ar-count__cell">
+                        <span class="ar-count__num" data-cd="seconds">۰۰</span>
+                        <span class="ar-count__label">ثانیه</span>
+                    </div>
+                </div>
+                <a class="ar-btn ar-btn--primary ar-btn--block mt-4" href="{% url 'products:list' %}">
+                    خرید با تخفیف <i class="icon-long-arrow-left" aria-hidden="true"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ══ پرفروش‌ها ══════════════════════════════════════════════════════════ -->
+{% if trending_products %}
+<section class="ar-band">
+    <div class="ar-container">
+        <div class="ar-shelf" data-ar-shelf-root>
+            <div class="ar-section-head">
+                <div class="ar-section-head__text">
+                    <span class="ar-eyebrow">انتخاب مشتریان</span>
+                    <h2 class="ar-section-title">محبوب‌های این ماه</h2>
+                    <p class="ar-section-desc">محصولاتی که بیشترین سفارش و رضایت را داشته‌اند.</p>
+                </div>
+                <div class="ar-cluster">
+                    <div class="ar-shelf__nav">
+                        <button type="button" data-ar-shelf-prev aria-label="محصولات قبلی">
+                            <i class="icon-angle-right" aria-hidden="true"></i>
+                        </button>
+                        <button type="button" data-ar-shelf-next aria-label="محصولات بعدی">
+                            <i class="icon-angle-left" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <a class="ar-link-more" href="{% url 'products:list' %}?sort=popularity">
+                        مشاهده همه <i class="icon-long-arrow-left" aria-hidden="true"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div class="ar-shelf__track" data-ar-shelf>
+                {% for product in trending_products %}
+                {% include 'shared/product_card.html' with product=product %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- ══ عضویت ══════════════════════════════════════════════════════════════ -->
+<section class="ar-container ar-section--tight">
+    <div class="ar-join" data-ar-reveal>
+        <div class="ar-join__inner">
+            <div>
+                <span class="ar-tile__eyebrow">باشگاه آریو</span>
+                <h2 class="ar-join__title">۱۵٪ تخفیف اولین خرید،<br>به‌علاوه خبرها قبل از همه</h2>
+                <p class="ar-join__text">
+                    ایمیل‌تان را ثبت کنید تا کد تخفیف اولین خرید، خبر کالکشن‌های
+                    تازه و پیشنهادهای ویژه را برایتان بفرستیم.
+                </p>
+            </div>
+            <form class="ar-join__form" action="{% url 'contact' %}" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="name" value="مشترک خبرنامه">
+                <input type="hidden" name="subject" value="عضویت در باشگاه آریو">
+                <input type="hidden" name="message" value="درخواست عضویت در خبرنامه آریو شاپ">
+                <label class="ar-sr-only" for="join-email">ایمیل شما</label>
+                <div class="ar-join__row">
+                    <input id="join-email" type="email" name="email" dir="ltr"
+                           autocomplete="email" placeholder="you@example.com" required>
+                    <button class="ar-btn ar-btn--gold" type="submit">
+                        عضویت <i class="icon-long-arrow-left" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <p class="ar-join__hint">بدون تبلیغات مزاحم؛ هر زمان بخواهید می‌توانید لغو کنید.</p>
+            </form>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

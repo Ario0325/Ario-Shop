@@ -1,0 +1,26 @@
+/**
+ * Persian (Jalali) Date Picker Styles
+ */
+
+.jalali-date-picker,
+.jalali-datetime-picker {
+    direction: rtl;
+    text-align: right;
+    font-family: 'Vazir', 'Tahoma', sans-serif;
+}
+
+/* Override Django admin date input styles */
+.vDateField.jalali-date-picker,
+.vDateTimeField.jalali-datetime-picker {
+    width: 120px;
+}
+
+/* Persian calendar dropdown styling */
+.persian-datepicker-theme-default {
+    font-family: 'Vazir', 'Tahoma', sans-serif !important;
+}
+
+/* Make sure date picker displays correctly in admin */
+.pdp-standalone {
+    z-index: 9999;
+}

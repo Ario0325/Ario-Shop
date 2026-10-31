@@ -1,0 +1,99 @@
+{% extends 'shared/base.html' %}
+{% load static %}
+{% load persian_date_tags %}
+{% load number_tags %}
+
+{% block title %}سفارش‌های من | آریو شاپ{% endblock %}
+
+{% block content %}
+{% url 'products:list' as shop_url %}
+<div class="ar-container">
+    {% include 'shared/page_head.html' with title="سفارش‌های من" desc="وضعیت همه سفارش‌های خود را اینجا پیگیری کنید." eyebrow="حساب من" meta=page_obj.paginator.count|ar_digits|add:" سفارش" %}
+</div>
+
+<div class="ar-container">
+    <div class="ar-account">
+        {% include 'shared/account_sidebar.html' with active='orders' %}
+
+        <div class="ar-account__main">
+            {% if orders %}
+            <div class="ar-stack">
+                {% for order in orders %}
+                <article class="ar-ordercard">
+                    <div class="ar-ordercard__id">
+                        <b dir="ltr">#{{ order.order_number }}</b>
+                        <span>{{ order.created_at|to_persian_date|fa_digits }}</span>
+                    </div>
+
+                    <div class="ar-ordercard__stack">
+                        <div class="ar-orderthumbs">
+                            {% for item in order.items.all|slice:":3" %}
+                            <span>
+                                {% if item.product and item.product.images.all.0 %}
+                                <img src="{{ item.product.images.all.0.image.url }}" alt="{{ item.product_name }}"
+                                     loading="lazy" decoding="async" width="42" height="52">
+                                {% else %}
+                                <img src="{% static 'assets/images/v2/placeholder-product.webp' %}" alt=""
+                                     loading="lazy" decoding="async" width="42" height="52">
+                                {% endif %}
+                            </span>
+                            {% endfor %}
+                            {% if order.items.count > 3 %}
+                            <span class="ar-orderthumbs__more" aria-hidden="true">+{{ order.items.count|add:"-3"|ar_digits }}</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="ar-ordercard__meta">
+                            <span>{{ order.items.count|ar_digits }} کالا</span>
+                            <span>مبلغ: <b>{{ order.total|toman }}</b></span>
+                            {% if order.status == 'pending' %}
+                            <span class="ar-badge ar-badge--warning">در انتظار پرداخت</span>
+                            {% elif order.status == 'paid' %}
+                            <span class="ar-badge ar-badge--success">پرداخت شده</span>
+                            {% elif order.status == 'processing' %}
+                            <span class="ar-badge ar-badge--info">در حال پردازش</span>
+                            {% elif order.status == 'shipped' %}
+                            <span class="ar-badge ar-badge--gold">ارسال شده</span>
+                            {% elif order.status == 'delivered' %}
+                            <span class="ar-badge ar-badge--success">تحویل داده شده</span>
+                            {% elif order.status == 'cancelled' %}
+                            <span class="ar-badge ar-badge--danger">لغو شده</span>
+                            {% else %}
+                            <span class="ar-badge">{{ order.get_status_display }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="ar-ordercard__actions">
+                        <a href="{% url 'accounts:order_detail' order.id %}" class="ar-btn ar-btn--outline ar-btn--xs">
+                            <i class="icon-eye" aria-hidden="true"></i> جزئیات
+                        </a>
+                        {% if order.status == 'pending' %}
+                        <a href="{% url 'cart:payment' order.id %}" class="ar-btn ar-btn--gold ar-btn--xs">
+                            <i class="icon-credit-card" aria-hidden="true"></i> پرداخت
+                        </a>
+                        {% endif %}
+                        {% if order.status == 'pending' or order.status == 'paid' or order.status == 'processing' %}
+                        <form method="post" action="{% url 'accounts:order_cancel' order.id %}"
+                              data-ar-confirm="سفارش #{{ order.order_number }} لغو شود؟ موجودی کالاها به انبار برمی‌گردد و این کار قابل بازگشت نیست.">
+                            {% csrf_token %}
+                            <button type="submit" class="ar-btn ar-btn--danger ar-btn--xs">
+                                <i class="icon-close" aria-hidden="true"></i> لغو
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+
+            {% include 'shared/pagination.html' %}
+            {% else %}
+            <div class="ar-account__card">
+                {% include 'shared/empty_state.html' with title="هنوز سفارشی ندارید" text="اولین خرید خود را از آریو شاپ انجام دهید تا سفارش‌هایتان اینجا نمایش داده شود." icon="icon-shopping-bag" action_url=shop_url action_label="شروع خرید" %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

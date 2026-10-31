@@ -1,0 +1,85 @@
+{% extends 'shared/base.html' %}
+{% load static %}
+
+{% block title %}داشبورد حساب کاربری | آریو شاپ{% endblock %}
+
+{% block content %}
+<div class="ar-container">
+    {% include 'shared/page_head.html' with title="داشبورد" desc="اطلاعات حساب، سفارش‌ها و نظرات خود را از یک‌جا مدیریت کنید." eyebrow="حساب من" %}
+</div>
+
+<div class="ar-container">
+    <div class="ar-account">
+        {% include 'shared/account_sidebar.html' with active='profile' %}
+
+        <div class="ar-account__main">
+            <section class="ar-account__card">
+                <div class="ar-account__cardhead">
+                    <div>
+                        <h2 class="ar-account__cardtitle"><i class="icon-user" aria-hidden="true"></i> اطلاعات حساب</h2>
+                        <p class="ar-account__carddesc">این اطلاعات در فاکتور و ارسال سفارش استفاده می‌شود.</p>
+                    </div>
+                    <span class="ar-badge ar-badge--success">
+                        <i class="icon-shield" aria-hidden="true"></i> حساب فعال
+                    </span>
+                </div>
+
+                <form action="{% url 'accounts:dashboard' %}" method="post" data-ar-validate novalidate>
+                    {% csrf_token %}
+                    <div class="ar-formgrid">
+                        {% for field in form %}
+                        <div class="ar-field{% if field.name == 'address' %} ar-field--full{% endif %}">
+                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}
+                            <p class="ar-error">{{ field.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="ar-formactions">
+                        <button type="submit" class="ar-btn ar-btn--primary" data-ar-submit>
+                            <i class="icon-check" aria-hidden="true"></i>
+                            ذخیره تغییرات
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="ar-account__card">
+                <div class="ar-account__cardhead">
+                    <div>
+                        <h2 class="ar-account__cardtitle"><i class="icon-shopping-bag" aria-hidden="true"></i> دسترسی سریع</h2>
+                        <p class="ar-account__carddesc">کارهای پرتکرار حساب شما.</p>
+                    </div>
+                </div>
+
+                <div class="ar-statgrid">
+                    <a class="ar-stat" href="{% url 'accounts:orders' %}">
+                        <span class="ar-stat__icon"><i class="icon-shopping-bag" aria-hidden="true"></i></span>
+                        <div>
+                            <b>سفارش‌ها</b>
+                            <span>پیگیری وضعیت خرید</span>
+                        </div>
+                    </a>
+                    <a class="ar-stat" href="{% url 'accounts:comments' %}">
+                        <span class="ar-stat__icon"><i class="icon-comment" aria-hidden="true"></i></span>
+                        <div>
+                            <b>نظرات</b>
+                            <span>دیدگاه‌های ثبت‌شده</span>
+                        </div>
+                    </a>
+                    <a class="ar-stat" href="{% url 'cart:detail' %}">
+                        <span class="ar-stat__icon"><i class="icon-shopping-cart" aria-hidden="true"></i></span>
+                        <div>
+                            <b>سبد خرید</b>
+                            <span>ادامه خرید</span>
+                        </div>
+                    </a>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+{% endblock %}

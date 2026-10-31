@@ -1,0 +1,214 @@
+{% extends 'shared/base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}ورود و ثبت‌نام | آریو شاپ{% endblock %}
+{% block meta_description %}ورود به حساب کاربری یا ساخت حساب جدید در آریو شاپ.{% endblock %}
+
+{% block content %}
+<div class="ar-container">
+    <nav aria-label="مسیر صفحه">
+        <ol class="ar-crumbs">
+            <li><a href="{% url 'index' %}">خانه</a></li>
+            <li><span aria-current="page">ورود و ثبت‌نام</span></li>
+        </ol>
+    </nav>
+
+    <div class="ar-auth">
+        <div class="ar-auth__main">
+            <div class="ar-auth__inner">
+                <div class="ar-auth__head">
+                    <span class="ar-auth__ico" aria-hidden="true"><i class="icon-user"></i></span>
+                    <h1 class="ar-auth__title">
+                        {% if active_tab == 'register' %}ساخت حساب کاربری{% else %}خوش آمدید{% endif %}
+                    </h1>
+                    <p class="ar-auth__sub">
+                        {% if active_tab == 'register' %}
+                        در چند ثانیه حساب بسازید و خرید خود را شروع کنید.
+                        {% else %}
+                        برای ادامه، وارد حساب کاربری خود شوید.
+                        {% endif %}
+                    </p>
+                </div>
+
+                <div data-ar-tabs data-ar-tabs-active="{% if active_tab == 'register' %}1{% else %}0{% endif %}">
+                    <div class="ar-tabs" role="tablist" aria-label="ورود یا ثبت‌نام">
+                        <button class="ar-tab{% if active_tab != 'register' %} is-active{% endif %}" type="button" role="tab"
+                                id="tab-login" aria-controls="panel-login" data-ar-tab="login"
+                                aria-selected="{% if active_tab != 'register' %}true{% else %}false{% endif %}"
+                                tabindex="{% if active_tab != 'register' %}0{% else %}-1{% endif %}">
+                            <i class="icon-sign-in" aria-hidden="true"></i> ورود
+                        </button>
+                        <button class="ar-tab{% if active_tab == 'register' %} is-active{% endif %}" type="button" role="tab"
+                                id="tab-register" aria-controls="panel-register" data-ar-tab="register"
+                                aria-selected="{% if active_tab == 'register' %}true{% else %}false{% endif %}"
+                                tabindex="{% if active_tab == 'register' %}0{% else %}-1{% endif %}">
+                            <i class="icon-user" aria-hidden="true"></i> ثبت‌نام
+                        </button>
+                    </div>
+
+                    <!-- ── login ─────────────────────────────────────────────── -->
+                    <div class="ar-panel{% if active_tab != 'register' %} is-active{% endif %}" id="panel-login"
+                         role="tabpanel" aria-labelledby="tab-login" data-ar-panel="login"
+                         {% if active_tab == 'register' %}hidden{% endif %}>
+                        <form class="ar-auth__form" data-ar-validate
+                              action="{% url 'accounts:login_register' %}{% if request.GET.next %}?next={{ request.GET.next|urlencode }}{% endif %}"
+                              method="post" novalidate>
+                            {% csrf_token %}
+                            <input type="hidden" name="login" value="1">
+
+                            {% if login_form.non_field_errors %}
+                            <div class="alert alert-danger" role="alert">
+                                <i class="icon-info-circle" aria-hidden="true"></i>
+                                {{ login_form.non_field_errors.0 }}
+                            </div>
+                            {% endif %}
+
+                            <div class="ar-field">
+                                <div class="ar-field__top">
+                                    <label for="singin-email-2">نام کاربری یا ایمیل</label>
+                                </div>
+                                <div class="ar-input-group">
+                                    <span class="ar-input-icon" aria-hidden="true"><i class="icon-user"></i></span>
+                                    {{ login_form.username }}
+                                </div>
+                                {% if login_form.username.errors %}
+                                <p class="ar-error">{{ login_form.username.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+
+                            <div class="ar-field">
+                                <div class="ar-field__top">
+                                    <label for="singin-password-2">رمز عبور</label>
+                                    <a class="ar-field__link" href="{% url 'accounts:forget_password' %}">فراموش کرده‌اید؟</a>
+                                </div>
+                                <div class="ar-input-group">
+                                    <span class="ar-input-icon" aria-hidden="true"><i class="icon-lock"></i></span>
+                                    {{ login_form.password }}
+                                    <button class="ar-input-suffix" type="button" data-ar-pw-toggle="singin-password-2"
+                                            aria-label="نمایش رمز عبور" aria-pressed="false">
+                                        <i class="icon-eye" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                                {% if login_form.password.errors %}
+                                <p class="ar-error">{{ login_form.password.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+
+                            <div class="ar-auth__meta">
+                                <label class="ar-checkline">
+                                    {{ login_form.remember_me }}
+                                    <span>مرا به خاطر بسپار</span>
+                                </label>
+                            </div>
+
+                            <button class="ar-btn ar-btn--primary ar-btn--block ar-btn--lg" type="submit" data-ar-submit>
+                                ورود به حساب
+                                <i class="icon-long-arrow-left" aria-hidden="true"></i>
+                            </button>
+                        </form>
+
+                        <p class="ar-auth__alt">
+                            حساب ندارید؟
+                            <a href="#" data-ar-switch-tab="1">همین حالا ثبت‌نام کنید</a>
+                        </p>
+                    </div>
+
+                    <!-- ── register ──────────────────────────────────────────── -->
+                    <div class="ar-panel{% if active_tab == 'register' %} is-active{% endif %}" id="panel-register"
+                         role="tabpanel" aria-labelledby="tab-register" data-ar-panel="register"
+                         {% if active_tab != 'register' %}hidden{% endif %}>
+                        <form class="ar-auth__form" data-ar-validate
+                              action="{% url 'accounts:login_register' %}{% if request.GET.next %}?next={{ request.GET.next|urlencode }}{% endif %}"
+                              method="post" novalidate>
+                            {% csrf_token %}
+                            <input type="hidden" name="register" value="1">
+
+                            {% if register_form.non_field_errors %}
+                            <div class="alert alert-danger" role="alert">
+                                <i class="icon-info-circle" aria-hidden="true"></i>
+                                {{ register_form.non_field_errors.0 }}
+                            </div>
+                            {% endif %}
+
+                            <div class="ar-field">
+                                <div class="ar-field__top">
+                                    <label for="register-email-2">آدرس ایمیل</label>
+                                </div>
+                                <div class="ar-input-group">
+                                    <span class="ar-input-icon" aria-hidden="true"><i class="icon-envelope"></i></span>
+                                    {{ register_form.email }}
+                                </div>
+                                {% if register_form.email.errors %}
+                                <p class="ar-error">{{ register_form.email.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+
+                            <div class="ar-field">
+                                <div class="ar-field__top">
+                                    <label for="register-password-2">رمز عبور</label>
+                                </div>
+                                <div class="ar-input-group">
+                                    <span class="ar-input-icon" aria-hidden="true"><i class="icon-lock"></i></span>
+                                    {{ register_form.password1 }}
+                                    <button class="ar-input-suffix" type="button" data-ar-pw-toggle="register-password-2"
+                                            aria-label="نمایش رمز عبور" aria-pressed="false">
+                                        <i class="icon-eye" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                                <div class="ar-pwmeter" data-ar-pwmeter aria-hidden="true">
+                                    <span></span><span></span><span></span><span></span>
+                                </div>
+                                {% if register_form.password1.errors %}
+                                <p class="ar-error">{{ register_form.password1.errors.0 }}</p>
+                                {% else %}
+                                <p class="ar-hint">حداقل ۸ کاراکتر، ترکیبی از حرف و عدد.</p>
+                                {% endif %}
+                            </div>
+
+                            <div class="ar-field">
+                                <div class="ar-field__top">
+                                    <label for="register-password2-2">تکرار رمز عبور</label>
+                                </div>
+                                <div class="ar-input-group">
+                                    <span class="ar-input-icon" aria-hidden="true"><i class="icon-lock"></i></span>
+                                    {{ register_form.password2 }}
+                                    <button class="ar-input-suffix" type="button" data-ar-pw-toggle="register-password2-2"
+                                            aria-label="نمایش رمز عبور" aria-pressed="false">
+                                        <i class="icon-eye" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                                {% if register_form.password2.errors %}
+                                <p class="ar-error">{{ register_form.password2.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+
+                            <div class="ar-field">
+                                <label class="ar-checkline">
+                                    {{ register_form.accept_terms }}
+                                    <span>با <a href="{% url 'AboutUs_Module:about' %}">قوانین و مقررات</a> آریو شاپ موافقم.</span>
+                                </label>
+                                {% if register_form.accept_terms.errors %}
+                                <p class="ar-error">{{ register_form.accept_terms.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+
+                            <button class="ar-btn ar-btn--primary ar-btn--block ar-btn--lg" type="submit" data-ar-submit>
+                                ایجاد حساب کاربری
+                                <i class="icon-long-arrow-left" aria-hidden="true"></i>
+                            </button>
+                        </form>
+
+                        <p class="ar-auth__alt">
+                            قبلاً ثبت‌نام کرده‌اید؟
+                            <a href="#" data-ar-switch-tab="0">ورود به حساب</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% include 'shared/auth_aside.html' %}
+    </div>
+</div>
+{% endblock %}

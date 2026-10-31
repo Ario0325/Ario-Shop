@@ -1,0 +1,310 @@
+@charset "UTF-8";
+/* ==========================================================================
+   Ario Shop — Design Tokens
+   Identity: "Atelier Plum" — plum / sand / peach editorial boutique
+   Layer 1 of 4 · tokens only (no selectors besides :root and theme maps)
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Fonts
+   Body  : Vazir (self-hosted, 4 weights)
+   Display: Estedad variable (100–900)
+   -------------------------------------------------------------------------- */
+@font-face {
+    font-family: "ArioSans";
+    src: url("../fonts/vazir-font-v16.1.0/Vazir-Light.woff2") format("woff2"),
+         url("../fonts/vazir-font-v16.1.0/Vazir-Light.woff") format("woff");
+    font-weight: 300;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: "ArioSans";
+    src: url("../fonts/vazir-font-v16.1.0/Vazir.woff2") format("woff2"),
+         url("../fonts/vazir-font-v16.1.0/Vazir.woff") format("woff");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: "ArioSans";
+    src: url("../fonts/vazir-font-v16.1.0/Vazir-Medium.woff2") format("woff2"),
+         url("../fonts/vazir-font-v16.1.0/Vazir-Medium.woff") format("woff");
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: "ArioSans";
+    src: url("../fonts/vazir-font-v16.1.0/Vazir-Bold.woff2") format("woff2"),
+         url("../fonts/vazir-font-v16.1.0/Vazir-Bold.woff") format("woff");
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: "ArioDisplay";
+    src: url("../fonts/estedad/Estedad-Variable.woff2") format("woff2-variations"),
+         url("../fonts/estedad/Estedad-Variable.woff2") format("woff2");
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* --------------------------------------------------------------------------
+   Primitives
+   -------------------------------------------------------------------------- */
+:root {
+    /* plum */
+    --p-950: #140810;
+    --p-900: #1E0C17;
+    --p-800: #2B1220;
+    --p-700: #3E1B2E;
+    --p-600: #55263F;
+    --p-500: #6E3452;
+    --p-400: #8E4C67;
+
+    /* rose */
+    --rose-500: #B0708A;
+    --rose-300: #D8A9BC;
+    --rose-100: #F3E7EC;
+
+    /* peach */
+    --peach-300: #F0C9AA;
+    --peach-400: #E7B48D;
+    --peach-500: #D99A6C;
+    --peach-600: #C67F4E;
+
+    /* sand */
+    --sand-50: #FDFAF6;
+    --sand-100: #F7F1EA;
+    --sand-200: #F0E6DB;
+    --sand-300: #E2D3C4;
+    --sand-400: #CDB8A5;
+
+    /* ink */
+    --ink-900: #241018;
+    --ink-700: #4A303C;
+    --ink-500: #6E5B64;
+    --ink-300: #9A8B92;
+}
+
+/* --------------------------------------------------------------------------
+   Semantic — light (default)
+   -------------------------------------------------------------------------- */
+:root {
+    --bg:              var(--sand-100);
+    --bg-soft:         #F2E9DF;
+    --bg-sunk:         #EBDDD0;
+    --surface:         #FFFFFF;
+    --surface-2:       #FCF8F3;
+    --surface-3:       #F5ECE3;
+    --glass:           rgba(253, 250, 246, .74);
+    --glass-strong:    rgba(253, 250, 246, .9);
+
+    --text:            var(--ink-900);
+    --text-2:          var(--ink-700);
+    --muted:           var(--ink-500);
+    --faint:           var(--ink-300);
+    --on-dark:         #FBF4EF;
+
+    --border:          var(--sand-300);
+    --border-2:        var(--sand-400);
+    --border-soft:     rgba(36, 16, 24, .08);
+    --hairline:        rgba(36, 16, 24, .12);
+
+    --brand:           var(--p-700);
+    --brand-2:         var(--p-600);
+    --brand-deep:      var(--p-800);
+    --brand-plate:     var(--p-900);
+    --brand-soft:      var(--rose-100);
+    --on-brand:        #FBF4EF;
+
+    --accent:          var(--peach-500);
+    --accent-2:        var(--peach-600);
+    --accent-soft:     #FBEEE3;
+    --accent-ink:      var(--p-800);
+
+    --rose:            var(--rose-500);
+
+    --success:         #2E7D5B;
+    --success-soft:    #E6F3ED;
+    --danger:          #B23A48;
+    --danger-soft:     #FBEAEC;
+    --warning:         #B5762A;
+    --warning-soft:    #FBF0DE;
+    --info:            #40698A;
+    --info-soft:       #E9F0F6;
+
+    /* type */
+    --font-body:       "ArioSans", "Vazirmatn", "IRANSans", system-ui, -apple-system, "Segoe UI", Tahoma, sans-serif;
+    --font-display:    "ArioDisplay", "ArioSans", "Vazirmatn", system-ui, sans-serif;
+
+    --fs-2xs:          0.6875rem;
+    --fs-xs:           0.75rem;
+    --fs-sm:           0.8125rem;
+    --fs-base:         0.9375rem;
+    --fs-md:           1rem;
+    --fs-lg:           1.125rem;
+    --fs-xl:           1.375rem;
+    --fs-2xl:          1.75rem;
+    --fs-3xl:          clamp(1.75rem, 1.15rem + 2.2vw, 2.6rem);
+    --fs-4xl:          clamp(2.15rem, 1.2rem + 3.6vw, 3.9rem);
+    --fs-hero:         clamp(2.3rem, 1.1rem + 4.6vw, 4.6rem);
+
+    --lh:              1.85;
+    --lh-snug:         1.55;
+    --lh-tight:        1.18;
+
+    /* space */
+    --sp-1: 4px;
+    --sp-2: 8px;
+    --sp-3: 12px;
+    --sp-4: 16px;
+    --sp-5: 20px;
+    --sp-6: 24px;
+    --sp-7: 32px;
+    --sp-8: 40px;
+    --sp-9: 56px;
+    --sp-10: 72px;
+    --sp-11: 96px;
+
+    /* shape */
+    --r-xs: 8px;
+    --r-sm: 12px;
+    --r-md: 16px;
+    --r-lg: 22px;
+    --r-xl: 28px;
+    --r-2xl: 36px;
+    --r-pill: 999px;
+
+    /* depth — plum tinted */
+    --sh-1: 0 1px 2px rgba(36, 16, 24, .04), 0 4px 14px rgba(36, 16, 24, .05);
+    --sh-2: 0 2px 8px rgba(36, 16, 24, .06), 0 16px 40px rgba(36, 16, 24, .09);
+    --sh-3: 0 10px 26px rgba(36, 16, 24, .10), 0 40px 80px rgba(36, 16, 24, .14);
+    --sh-accent: 0 12px 30px rgba(217, 154, 108, .32);
+    --sh-brand: 0 14px 34px rgba(62, 27, 46, .28);
+    --sh-inset: inset 0 1px 0 rgba(255, 255, 255, .55);
+
+    /* motion */
+    --ease:            cubic-bezier(.32, .72, .28, 1);
+    --ease-out:        cubic-bezier(.16, 1, .3, 1);
+    --ease-spring:     cubic-bezier(.34, 1.4, .5, 1);
+    --t-fast:          140ms;
+    --t-base:          220ms;
+    --t-slow:          420ms;
+    --t-slower:        680ms;
+
+    /* layout */
+    --container:       1340px;
+    --container-narrow: 940px;
+    --gutter:          24px;
+    --header-h:        64px;
+    --header-util:     34px;
+    /* utility strip + main bar */
+    --header-total:    calc(var(--header-h) + var(--header-util));
+    /* live offset for sticky elements: shrinks while the header is compact */
+    --hdr-offset:      calc(var(--header-total) + 12px);
+
+    /* z */
+    --z-header:        900;
+    --z-drop:          950;
+    --z-overlay:       1000;
+    --z-drawer:        1010;
+    --z-modal:         1050;
+    --z-toast:         1100;
+    --z-preload:       2000;
+}
+
+/* the utility strip collapses and the bar shrinks while scrolling */
+html.is-hdr-compact { --hdr-offset: 62px; }
+
+/* --------------------------------------------------------------------------
+   Semantic — dark
+   -------------------------------------------------------------------------- */
+[data-theme="dark"] {
+    --bg:              #150A10;
+    --bg-soft:         #1B0E16;
+    --bg-sunk:         #120710;
+    --surface:         #1F0F18;
+    --surface-2:       #25121D;
+    --surface-3:       #2D1722;
+    --glass:           rgba(31, 15, 24, .72);
+    --glass-strong:    rgba(31, 15, 24, .9);
+
+    --text:            #F6ECE6;
+    --text-2:          #E2D2CB;
+    --muted:           #B9A6AF;
+    --faint:           #8C7884;
+    --on-dark:         #FBF4EF;
+
+    --border:          #3A2430;
+    --border-2:        #4A2F3D;
+    --border-soft:     rgba(246, 236, 230, .08);
+    --hairline:        rgba(246, 236, 230, .14);
+
+    --brand:           var(--peach-400);
+    --brand-2:         var(--peach-500);
+    --brand-deep:      var(--p-950);
+    --brand-plate:     #120710;
+    --brand-soft:      rgba(176, 112, 138, .16);
+    --on-brand:        var(--p-900);
+
+    --accent:          var(--peach-400);
+    --accent-2:        var(--peach-500);
+    --accent-soft:     rgba(217, 154, 108, .14);
+    --accent-ink:      var(--p-900);
+
+    --rose:            #D8A9BC;
+
+    --success:         #6BC79B;
+    --success-soft:    rgba(46, 125, 91, .18);
+    --danger:          #F0909B;
+    --danger-soft:     rgba(178, 58, 72, .18);
+    --warning:         #E9B567;
+    --warning-soft:    rgba(181, 118, 42, .18);
+    --info:            #8FB6D6;
+    --info-soft:       rgba(64, 105, 138, .2);
+
+    --sh-1: 0 1px 2px rgba(0, 0, 0, .3), 0 4px 14px rgba(0, 0, 0, .24);
+    --sh-2: 0 2px 8px rgba(0, 0, 0, .34), 0 16px 40px rgba(0, 0, 0, .32);
+    --sh-3: 0 10px 26px rgba(0, 0, 0, .4), 0 40px 80px rgba(0, 0, 0, .45);
+    --sh-accent: 0 12px 30px rgba(217, 154, 108, .18);
+    --sh-brand: 0 14px 34px rgba(0, 0, 0, .4);
+    --sh-inset: inset 0 1px 0 rgba(255, 255, 255, .06);
+
+    color-scheme: dark;
+}
+
+/* system dark when the visitor has not chosen a theme explicitly */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --bg:              #150A10;
+        --bg-soft:         #1B0E16;
+        --bg-sunk:         #120710;
+        --surface:         #1F0F18;
+        --surface-2:       #25121D;
+        --surface-3:       #2D1722;
+        --glass:           rgba(31, 15, 24, .72);
+        --glass-strong:    rgba(31, 15, 24, .9);
+        --text:            #F6ECE6;
+        --text-2:          #E2D2CB;
+        --muted:           #B9A6AF;
+        --faint:           #8C7884;
+        --border:          #3A2430;
+        --border-2:        #4A2F3D;
+        --border-soft:     rgba(246, 236, 230, .08);
+        --hairline:        rgba(246, 236, 230, .14);
+        --brand:           var(--peach-400);
+        --brand-2:         var(--peach-500);
+        --brand-soft:      rgba(176, 112, 138, .16);
+        --on-brand:        var(--p-900);
+        --accent-soft:     rgba(217, 154, 108, .14);
+        --brand-plate:     #120710;
+        --sh-1: 0 1px 2px rgba(0, 0, 0, .3), 0 4px 14px rgba(0, 0, 0, .24);
+        --sh-2: 0 2px 8px rgba(0, 0, 0, .34), 0 16px 40px rgba(0, 0, 0, .32);
+        --sh-3: 0 10px 26px rgba(0, 0, 0, .4), 0 40px 80px rgba(0, 0, 0, .45);
+        --sh-inset: inset 0 1px 0 rgba(255, 255, 255, .06);
+        color-scheme: dark;
+    }
+}

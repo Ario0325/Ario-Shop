@@ -1,0 +1,161 @@
+{% extends 'shared/base.html' %}
+{% load static %}
+{% load number_tags %}
+{% load persian_date_tags %}
+
+{% block title %}فاکتور {{ order.order_number }} | آریو شاپ{% endblock %}
+
+{% block body_class %}no-bottomnav{% endblock %}
+
+{% block content %}
+<div class="ar-invoice-wrap">
+    <div class="ar-container">
+        <article class="ar-invoice" aria-labelledby="invoice-title">
+            <header class="ar-inv__head">
+                <div class="ar-inv__brand">
+                    {% include 'shared/logo_mark.html' %}
+                    <div>
+                        <div class="ar-inv__brand-name">آریو شاپ</div>
+                        <div class="ar-inv__brand-tag">پوشاک و اکسسوری · فروشگاه اینترنتی</div>
+                    </div>
+                </div>
+                <div class="ar-inv__meta">
+                    <h1 class="ar-inv__title" id="invoice-title">فاکتور فروش</h1>
+                    <dl>
+                        <dt>شماره فاکتور</dt>
+                        <dd dir="ltr">{{ order.order_number }}</dd>
+                        <dt>تاریخ صدور</dt>
+                        <dd>{{ order.created_at|to_persian_date|fa_digits }}</dd>
+                        <dt>وضعیت</dt>
+                        <dd>{{ order.get_status_display }}</dd>
+                    </dl>
+                </div>
+            </header>
+
+            <div class="ar-inv__parties">
+                <section class="ar-inv__party">
+                    <h3>مشخصات خریدار</h3>
+                    <p>
+                        <b>{{ order.full_name }}</b><br>
+                        <span dir="ltr">{{ order.phone }}</span>
+                        {% if order.email %}<br><span dir="ltr">{{ order.email }}</span>{% endif %}
+                        <br>{{ order.address }}{% if order.city %}، {{ order.city }}{% endif %}
+                        {% if order.postal_code %}<br>کد پستی: <span dir="ltr">{{ order.postal_code }}</span>{% endif %}
+                    </p>
+                </section>
+                <section class="ar-inv__party">
+                    <h3>فروشنده</h3>
+                    <p>
+                        <b>آریو شاپ</b><br>
+                        {% if contact_info %}
+                        {{ contact_info.office_address|fa_digits }}<br>
+                        <span dir="ltr">{{ contact_info.phone1 }}</span>
+                        {% if contact_info.phone2 %} · <span dir="ltr">{{ contact_info.phone2 }}</span>{% endif %}
+                        <br><span dir="ltr">{{ contact_info.email }}</span>
+                        {% else %}
+                        تهران، ایران<br>
+                        <span dir="ltr">info@arioshop.ir</span>
+                        {% endif %}
+                    </p>
+                </section>
+            </div>
+
+            <table class="ar-inv__table">
+                <thead>
+                    <tr>
+                        <th scope="col">شماره</th>
+                        <th scope="col">کالا</th>
+                        <th scope="col">تعداد</th>
+                        <th scope="col">قیمت واحد</th>
+                        <th scope="col">مجموع</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in order.items.all %}
+                    <tr>
+                        <td data-label="شماره" class="num">{{ forloop.counter|ar_digits }}</td>
+                        <td data-label="کالا">
+                            <span class="ar-inv__pname">{{ item.product_name }}</span>
+                        </td>
+                        <td data-label="تعداد" class="num">{{ item.quantity|ar_digits }}</td>
+                        <td data-label="قیمت واحد" class="num">{{ item.price|toman }}</td>
+                        <td data-label="مجموع" class="num"><b>{{ item.total|toman }}</b></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="ar-inv__totals">
+                {% if order.subtotal and order.subtotal > 0 %}
+                <div class="ar-summary__row">
+                    <span>جمع فاکتور</span>
+                    <b>{{ order.subtotal|toman }}</b>
+                </div>
+                {% endif %}
+
+                {% if order.discount_amount and order.discount_amount > 0 %}
+                <div class="ar-summary__row ar-summary__row--off">
+                    <span>
+                        <i class="icon-tag" aria-hidden="true"></i>
+                        تخفیف{% if order.discount_code %} ({{ order.discount_code.code }}){% endif %}
+                    </span>
+                    <b>− {{ order.discount_amount|toman }}</b>
+                </div>
+                {% endif %}
+
+                {% if order.shipping_cost and order.shipping_cost > 0 %}
+                <div class="ar-summary__row">
+                    <span>هزینه ارسال</span>
+                    <b>{{ order.shipping_cost|toman }}</b>
+                </div>
+                {% endif %}
+
+                {% if order.tax and order.tax > 0 %}
+                <div class="ar-summary__row">
+                    <span>مالیات بر ارزش افزوده</span>
+                    <b>{{ order.tax|toman }}</b>
+                </div>
+                {% endif %}
+
+                <div class="ar-inv__grand">
+                    <span>مبلغ نهایی</span>
+                    <b>{{ order.total|toman }}</b>
+                </div>
+            </div>
+
+            <footer class="ar-inv__foot">
+                <div>
+                    این فاکتور به صورت الکترونیکی صادر شده است.
+                    {% if order.status == 'paid' %}
+                    <br><span class="ar-inv__stamp"><i class="icon-check-circle-o" aria-hidden="true"></i>پرداخت این سفارش تأیید شده است.</span>
+                    {% else %}
+                    <br><span class="ar-badge ar-badge--warning">وضعیت: {{ order.get_status_display }}</span>
+                    {% endif %}
+                </div>
+                <div>
+                    با تشکر از خرید شما — آریو شاپ
+                    <br>پشتیبانی: {% if contact_info %}<span dir="ltr">{{ contact_info.phone1 }}</span>{% else %}۹ تا ۲۱{% endif %}
+                </div>
+            </footer>
+        </article>
+
+        <div class="ar-inv__actions">
+            <button type="button" class="ar-btn ar-btn--primary" data-ar-print>
+                <i class="icon-print" aria-hidden="true"></i>
+                چاپ فاکتور
+            </button>
+            <button type="button" class="ar-btn ar-btn--outline" data-ar-copy="{{ order.order_number }}">
+                <i class="icon-clone" aria-hidden="true"></i>
+                کپی شماره فاکتور
+            </button>
+            <a class="ar-btn ar-btn--outline" href="{% url 'accounts:orders' %}">
+                <i class="icon-th-list" aria-hidden="true"></i>
+                سفارش‌های من
+            </a>
+            <a class="ar-btn ar-btn--soft" href="{% url 'products:list' %}">
+                بازگشت به فروشگاه
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

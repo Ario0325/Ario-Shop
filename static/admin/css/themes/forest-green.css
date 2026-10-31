@@ -1,0 +1,143 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   آریو شاپ — پنل مدیریت
+   تم Forest Green (جنگل سبز) — تیره و طبیعی
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+    /* رنگ‌های اصلی سبز زمردی */
+    --ap-primary:       #22c55e;
+    --ap-primary-dark:  #16a34a;
+    --ap-primary-light: #4ade80;
+    --ap-primary-glow:  rgba(34, 197, 94, 0.25);
+    
+    --ap-accent:        #86efac;
+    --ap-accent-glow:   rgba(134, 239, 172, 0.2);
+    --ap-accent-light:  #dcfce7;
+    
+    /* رنگ‌های مکمل */
+    --ap-success:       #22c55e;
+    --ap-warning:       #f59e0b;
+    --ap-danger:        #ef4444;
+    --ap-info:          #06b6d4;
+    
+    /* رنگ‌های پس‌زمینه تیره - سبز شبانه */
+    --ap-bg:            #0a1510;
+    --ap-surface:       #0f1c14;
+    --ap-surface-2:    #15291c;
+    --ap-card:          #0c1812;
+    --ap-card-hover:    #15291c;
+    --ap-border:        rgba(134, 239, 172, 0.08);
+    --ap-border-focus:  rgba(34, 197, 94, 0.5);
+    
+    /* متن */
+    --ap-text:          #f0fdf4;
+    --ap-text-muted:    #86efac;
+    --ap-text-dim:      #bbf7d0;
+    
+    /* سایه و شعاع */
+    --ap-shadow-sm:     0 4px 12px rgba(0, 0, 0, 0.5);
+    --ap-shadow-md:     0 8px 24px rgba(0, 0, 0, 0.6);
+    --ap-shadow-lg:     0 16px 48px rgba(0, 0, 0, 0.7);
+    --ap-shadow-glow:   0 0 30px rgba(34, 197, 94, 0.15);
+    
+    --ap-radius-sm:     8px;
+    --ap-radius-md:     12px;
+    --ap-radius-lg:     16px;
+    --ap-radius-xl:     24px;
+    
+    --ap-transition:    all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* شناسه تم */
+    --theme-id:         'forest-green';
+    --theme-name:       'جنگل سبز';
+    --theme-is-dark:    true;
+}
+
+/* گرادینت ویژه برای هدر - جنگلی */
+#header {
+    background: linear-gradient(180deg, #0f1c14 0%, #0a1510 50%, #0c1812 100%) !important;
+    border-bottom: 1px solid var(--ap-border) !important;
+    box-shadow: 0 4px 30px rgba(34, 197, 94, 0.1) !important;
+}
+
+/* گرادینت ویژه برای دکمه‌های اصلی */
+.button, .submit-row input, [type="submit"], .btn {
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%) !important;
+    border: none !important;
+    box-shadow: 0 4px 14px rgba(34, 197, 94, 0.3) !important;
+}
+
+.button:hover, .submit-row input:hover, [type="submit"]:hover, .btn:hover {
+    background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%) !important;
+    box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4) !important;
+    transform: translateY(-2px);
+}
+
+/* لینک‌ها با رنگ سبز */
+a:link, a:visited {
+    color: #4ade80 !important;
+}
+
+a:hover {
+    color: #86efac !important;
+}
+
+/* هاور ماژول‌ها */
+.module:hover {
+    border-right: 3px solid #22c55e !important;
+    box-shadow: 0 8px 30px rgba(34, 197, 94, 0.2) !important;
+}
+
+/* جدول‌ها */
+table thead th {
+    background: linear-gradient(180deg, #0f1c14 0%, #15291c 100%) !important;
+    border-bottom: 2px solid #22c55e !important;
+}
+
+/* فیلتر سایدبار */
+#changelist-filter {
+    border-right: 3px solid #22c55e !important;
+}
+
+/* انیمیشن جنگلی */
+@keyframes forestBreeze {
+    0%, 100% { 
+        box-shadow: 0 0 20px rgba(34, 197, 94, 0.2);
+    }
+    50% { 
+        box-shadow: 0 0 40px rgba(34, 197, 94, 0.4), 0 0 60px rgba(34, 197, 94, 0.1);
+    }
+}
+
+.module {
+    animation: forestBreeze 3s ease-in-out infinite;
+}
+
+/* فیلدهای فرم با فوکوس سبز */
+input[type="text"]:focus, 
+input[type="password"]:focus,
+input[type="email"]:focus,
+textarea:focus,
+select:focus {
+    border-color: #22c55e !important;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2) !important;
+}
+
+/* اسکرول بار سفارشی */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #0f1c14;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #4ade80 0%, #22c55e 100%);
+}

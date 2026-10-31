@@ -1,0 +1,771 @@
+{
+  "name": "Django n8n",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## 📧 احراز هویت - Auth Email Workflow\n**Webhook Path:** `/webhook/django-auth-event`\n\n**Payload نمونه:**\n```json\n{\n  \"event\": \"register\",\n  \"email\": \"user@example.com\",\n  \"username\": \"arya\",\n  \"code\": \"123456\",\n  \"reset_link\": \"https://...\"\n}\n```",
+        "height": 200,
+        "width": 300,
+        "color": 3
+      },
+      "id": "014f288f-aef8-4b87-8717-e5eec743fd7b",
+      "name": "Sticky Note 2b672737",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "django-auth-event",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "65833b4f-4d52-417c-807a-c99cfb2aa5d6",
+      "name": "Auth Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        144,
+        320
+      ],
+      "webhookId": "d4c7926b-c6c9-4c9a-b6be-decb88733293"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "event",
+              "value": "={{ $json.body?.event ?? $json.event ?? \"register\" }}",
+              "type": "string"
+            },
+            {
+              "id": "a2",
+              "name": "email",
+              "value": "={{ $json.body?.email ?? $json.email ?? \"\" }}",
+              "type": "string"
+            },
+            {
+              "id": "a3",
+              "name": "username",
+              "value": "={{ $json.body?.username ?? $json.username ?? \"کاربر\" }}",
+              "type": "string"
+            },
+            {
+              "id": "a4",
+              "name": "code",
+              "value": "={{ $json.body?.code ?? $json.code ?? \"\" }}",
+              "type": "string"
+            },
+            {
+              "id": "a5",
+              "name": "reset_link",
+              "value": "={{ $json.body?.reset_link ?? $json.reset_link ?? \"\" }}",
+              "type": "string"
+            },
+            {
+              "id": "a6",
+              "name": "sender_email",
+              "value": "={{ $json.body?.sender_email ?? $json.sender_email ?? \"bardiaabdi1393@gmail.com\" }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "da270b9d-9f28-4807-8632-cc748e187e7a",
+      "name": "Normalize Auth Payload",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        592,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.event }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "register"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.event }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "password_reset"
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "none"
+        }
+      },
+      "id": "f9c4beb4-1e61-432c-8ecd-9ef838fab792",
+      "name": "Route Auth Event",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        816,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $json.sender_email ?? 'bardiaabdi1393@gmail.com' }}",
+        "toEmail": "={{ $json.email }}",
+        "subject": "آریو شاپ - کد تایید ثبت‌نام شما",
+        "html": "=<div dir=\"rtl\" style=\"font-family: Vazir, Tahoma, sans-serif; max-width:600px; margin:auto; padding:30px; background:#f9f9f9; border-radius:10px;\"><h2 style=\"color:#2c3e50;\">🛍️ آریو شاپ</h2><p>کاربر گرامی <strong>{{ $json.username }}</strong>،</p><p>برای تکمیل ثبت‌نام در آریو شاپ از کد زیر استفاده کنید:</p><div style=\"background:#2c3e50;color:#fff;font-size:28px;font-weight:bold;text-align:center;padding:20px;border-radius:8px;letter-spacing:8px;\">{{ $json.code }}</div><p style=\"color:#888;font-size:13px;\">این کد تا ۱۵ دقیقه معتبر است.</p><hr/><p style=\"color:#aaa;font-size:12px;\">اگر شما این درخواست را نداده‌اید، این ایمیل را نادیده بگیرید.</p></div>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "8d8de719-5896-4f70-afc2-d927161a7bc9",
+      "name": "Send Verification Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1040,
+        128
+      ],
+      "webhookId": "433c86af-c09e-48c7-b8c4-5d39063f3c7b",
+      "credentials": {
+        "smtp": {
+          "id": "u8AwOl5QvCIJySGL",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"status\": \"ok\", \"message\": \"email sent\"}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "37dfa877-396d-49ce-8591-b967c8225433",
+      "name": "Respond Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1264,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $json.sender_email ?? 'bardiaabdi1393@gmail.com' }}",
+        "toEmail": "={{ $json.email }}",
+        "subject": "آریو شاپ - بازیابی رمز عبور",
+        "html": "=<div dir=\"rtl\" style=\"font-family: Vazir, Tahoma, sans-serif; max-width:600px; margin:auto; padding:30px; background:#f9f9f9; border-radius:10px;\"><h2 style=\"color:#2c3e50;\">🛍️ آریو شاپ</h2><p>کاربر گرامی <strong>{{ $json.username }}</strong>،</p><p>درخواست بازیابی رمز عبور برای حساب شما ثبت شد.</p><div style=\"text-align:center;margin:25px 0;\"><div style=\"background:#2c3e50;color:#fff;font-size:28px;font-weight:bold;text-align:center;padding:20px;border-radius:8px;letter-spacing:8px;\">{{ $json.code }}</div></div><p style=\"color:#888;font-size:13px;\">این کد تا ۳۰ دقیقه معتبر است.</p><hr/><p style=\"color:#aaa;font-size:12px;\">اگر شما این درخواست را نداده‌اید، حساب شما امن است.</p></div>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "a939894b-3022-4246-bdb9-683d89724b26",
+      "name": "Send Password Reset Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1040,
+        320
+      ],
+      "webhookId": "82b6f0b8-e1be-4417-9ece-6adfd24f5bdd",
+      "credentials": {
+        "smtp": {
+          "id": "u8AwOl5QvCIJySGL",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"status\": \"ok\", \"message\": \"reset email sent\"}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "49d4af67-559f-4fc1-890c-2555c4b279a8",
+      "name": "Respond Reset Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1264,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "order-paid",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "266010b3-8872-472e-8f99-fa91d39d8c87",
+      "name": "Order Paid Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        144,
+        736
+      ],
+      "webhookId": "d20da667-c373-462f-8bd8-301e89f6282b"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.body?.secret_token ?? $json.secret_token ?? \"\" }}",
+              "operator": {
+                "operation": "equals",
+                "type": "string"
+              },
+              "rightValue": "ario-shop-secret-token"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "1a5c87dc-a668-471e-8aca-dcecd3f00c26",
+      "name": "Validate Secret Token",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        368,
+        736
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst raw = $input.item.json;\nconst body = raw.body ?? raw;\nconst items = body.items || [];\n\nfunction formatPrice(price) {\n  return new Intl.NumberFormat('fa-IR').format(price) + ' تومان';\n}\n\nconst itemRows = items.map((item, index) => `\n  <tr style=\"background: ${index % 2 === 0 ? '#f9f9f9' : '#ffffff'};\">\n    <td style=\"padding:12px 16px;border-bottom:1px solid #e0e0e0;text-align:right;\">${item.name}</td>\n    <td style=\"padding:12px 16px;border-bottom:1px solid #e0e0e0;text-align:center;\">${item.quantity}</td>\n    <td style=\"padding:12px 16px;border-bottom:1px solid #e0e0e0;text-align:center;\">${formatPrice(item.unit_price)}</td>\n    <td style=\"padding:12px 16px;border-bottom:1px solid #e0e0e0;text-align:center;font-weight:bold;color:#2e7d32;\">${formatPrice(item.total_price)}</td>\n  </tr>\n`).join('');\n\nconst orderDate = new Date(body.created_at).toLocaleDateString('fa-IR', {\n  year: 'numeric', month: 'long', day: 'numeric'\n});\n\nconst grandTotal = (body.total_price || 0) + (body.shipping_cost || 0) - (body.discount || 0);\n\nconst html = `<!DOCTYPE html>\n<html dir=\"rtl\" lang=\"fa\">\n<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n<title>تایید سفارش - آریو شاپ</title>\n<style>\n*{margin:0;padding:0;box-sizing:border-box}\nbody{font-family:Tahoma,Arial,sans-serif;background:#f0f4f8;direction:rtl;color:#333}\n.container{max-width:650px;margin:30px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.12)}\n.header{background:linear-gradient(135deg,#1a237e,#283593,#3949ab);padding:40px 30px;text-align:center}\n.header h1{color:#fff;font-size:26px;font-weight:700;margin-bottom:8px}\n.header p{color:rgba(255,255,255,.85);font-size:14px}\n.badge{display:inline-block;background:#4caf50;color:#fff;border-radius:50px;padding:8px 24px;font-size:14px;margin:16px 0}\n.body{padding:32px 30px}\n.greeting{font-size:18px;font-weight:700;margin-bottom:8px;color:#1a237e}\n.message{font-size:14px;color:#555;line-height:1.8;margin-bottom:28px}\n.section-title{font-size:15px;font-weight:700;color:#333;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #e8eaf6}\n.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:28px}\n.info-box{background:#f5f5f5;border-radius:10px;padding:14px 16px}\n.info-box .label{font-size:11px;color:#888;margin-bottom:4px}\n.info-box .value{font-size:14px;font-weight:700;color:#222}\ntable{width:100%;border-collapse:collapse;margin-bottom:20px;border:1px solid #e0e0e0}\nthead{background:#1a237e;color:#fff}\nthead th{padding:12px 16px;text-align:right;font-size:13px;font-weight:700}\n.summary-box{background:#e8eaf6;border-radius:10px;padding:20px;margin-bottom:28px}\n.summary-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:14px}\n.summary-row.total{border-top:2px solid #3949ab;margin-top:10px;padding-top:14px;font-size:17px;font-weight:700;color:#1a237e}\n.address-box{background:#f9fbe7;border:1px solid #c5e1a5;border-radius:10px;padding:16px;margin-bottom:28px;font-size:14px;line-height:1.7}\n.footer{background:#1a237e;padding:24px;text-align:center}\n.footer p{color:rgba(255,255,255,.7);font-size:12px;line-height:1.8}\n</style>\n</head>\n<body>\n<div class=\"container\">\n  <div class=\"header\">\n    <h1>🛍️ آریو شاپ</h1>\n    <p>فروشگاه آنلاین</p>\n    <div class=\"badge\">✅ سفارش با موفقیت ثبت شد</div>\n  </div>\n  <div class=\"body\">\n    <p class=\"greeting\">سلام ${body.customer_name} عزیز،</p>\n    <p class=\"message\">از خرید شما سپاسگزاریم! پرداخت شما با موفقیت انجام شد و سفارش شما در حال پردازش است.</p>\n    <p class=\"section-title\">📋 اطلاعات سفارش</p>\n    <div class=\"info-grid\">\n      <div class=\"info-box\"><div class=\"label\">شماره سفارش</div><div class=\"value\">${body.order_number}</div></div>\n      <div class=\"info-box\"><div class=\"label\">تاریخ سفارش</div><div class=\"value\">${orderDate}</div></div>\n      <div class=\"info-box\"><div class=\"label\">وضعیت پرداخت</div><div class=\"value\" style=\"color:#2e7d32\">✅ پرداخت موفق</div></div>\n      <div class=\"info-box\"><div class=\"label\">ایمیل</div><div class=\"value\" style=\"direction:ltr;text-align:left;\">${body.customer_email}</div></div>\n    </div>\n    <p class=\"section-title\">🛒 اقلام سفارش</p>\n    <table>\n      <thead><tr><th>نام محصول</th><th style=\"text-align:center\">تعداد</th><th style=\"text-align:center\">قیمت واحد</th><th style=\"text-align:center\">قیمت کل</th></tr></thead>\n      <tbody>${itemRows}</tbody>\n    </table>\n    <div class=\"summary-box\">\n      <div class=\"summary-row\"><span>جمع کالاها:</span><span>${formatPrice(body.total_price || 0)}</span></div>\n      <div class=\"summary-row\"><span>هزینه ارسال:</span><span>${body.shipping_cost > 0 ? formatPrice(body.shipping_cost) : 'رایگان'}</span></div>\n      ${body.discount > 0 ? '<div class=\"summary-row\" style=\"color:#c62828\"><span>تخفیف:</span><span>-' + formatPrice(body.discount) + '</span></div>' : ''}\n      <div class=\"summary-row total\"><span>💰 مبلغ نهایی:</span><span>${formatPrice(grandTotal)}</span></div>\n    </div>\n    ${body.shipping_address ? '<p class=\"section-title\">📍 آدرس ارسال</p><div class=\"address-box\">' + body.shipping_address + '</div>' : ''}\n    <p style=\"font-size:13px;color:#777;text-align:center;\">در صورت هرگونه سوال با پشتیبانی ما تماس بگیرید.</p>\n  </div>\n  <div class=\"footer\">\n    <p>آریو شاپ | فروشگاه آنلاین<br>این ایمیل به صورت خودکار ارسال شده است.</p>\n  </div>\n</div>\n</body>\n</html>`;\n\nreturn [{ json: { ...body, emailHtml: html, grandTotal, orderDate } }];\n      "
+      },
+      "id": "d44ae772-625c-4773-b7c9-a6bf73f90b99",
+      "name": "Build Invoice Email HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        592,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "bardiaabdi1393@gmail.com",
+        "toEmail": "={{ $json.customer_email }}",
+        "subject": "=✅ تایید سفارش {{ $json.order_number }} - آریو شاپ",
+        "html": "={{ $json.emailHtml }}",
+        "options": {}
+      },
+      "id": "98f9f254-f0f1-486d-aa75-dd80bb45611b",
+      "name": "Send Order Confirmation Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        816,
+        640
+      ],
+      "webhookId": "687a26a1-ab58-4dfc-9b94-1df2d12cde8b",
+      "credentials": {
+        "smtp": {
+          "id": "u8AwOl5QvCIJySGL",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"status\": \"error\", \"message\": \"Unauthorized\"}",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "id": "8a3536c9-3334-4ef0-940d-997e37bfd64c",
+      "name": "Respond Unauthorized",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        592,
+        832
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 📌 Webhook\nDjango پس از پرداخت موفق به این webhook یک POST ارسال می‌کند.\n\n**متغیرهای لازم در n8n:**\n- `ORDER_WEBHOOK_SECRET` — توکن امنیتی\n- `SHOP_EMAIL` — ایمیل فرستنده",
+        "height": 200,
+        "width": 300,
+        "color": 3
+      },
+      "id": "0c285ff2-03be-424d-be30-51a66442b5ae",
+      "name": "Sticky Note d2a92c7f",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -32,
+        864
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 📧 SMTP Credential\nاطلاعات سرور ایمیل خود را در بخش Credentials وارد کنید.\n\nنوع credential: **SMTP**",
+        "height": 200,
+        "width": 300,
+        "color": 4
+      },
+      "id": "20816b1c-3a0e-43d4-ae60-53349eee4653",
+      "name": "Sticky Note 72ec1807",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        224,
+        1280
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"status\": \"success\", \"message\": \"Email sent successfully\"}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "9f574f22-ee8f-4aa3-8fbb-45a07eca36e5",
+      "name": "Respond Success1",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1040,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.body?.secret_token ?? $json.secret_token ?? \"\" }}",
+              "operator": {
+                "operation": "equals",
+                "type": "string"
+              },
+              "rightValue": "ario-shop-secret-token"
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          }
+        },
+        "options": {}
+      },
+      "id": "286e2f08-67aa-4458-b2d6-89c30e605872",
+      "name": "Validate Auth Secret",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        368,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"status\": \"error\", \"message\": \"Unauthorized\"}",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "id": "ff73b0e0-aa28-41e2-a2ce-a490e26b97ec",
+      "name": "Respond Auth Unauthorized",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        592,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "new-order-notify",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "53ce845f-67f7-4366-a051-eb37b3ceaf1f",
+      "name": "دریافت سفارش جدید",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        704,
+        1248
+      ],
+      "webhookId": "55eb1173-5bc5-4788-8f5b-a9b4f9e692d1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.body?.secret_token ?? $json.secret_token ?? \"\" }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "ario-shop-secret-token"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "6cb72fbb-537d-49b4-a9c2-43ec864f7980",
+      "name": "بررسی توکن امنیتی",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        928,
+        1248
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const body = $json.body ?? $json;\nconst items = body.items ?? [];\nconst itemsList = items.map((item, idx) =>\n  `  ${idx + 1}. ${item.name}\\n     تعداد: ${item.quantity} | قیمت واحد: ${Number(item.unit_price).toLocaleString('fa-IR')} تومان | جمع: ${Number(item.total_price).toLocaleString('fa-IR')} تومان`\n).join('\\n');\nconst message = `🛍️ <b>سفارش جدید ثبت شد!</b>\\n\\n📋 <b>شماره سفارش:</b> ${body.order_number}\\n🆔 <b>آیدی سفارش:</b> #${body.order_id}\\n\\n👤 <b>اطلاعات مشتری:</b>\\n  نام: ${body.customer_name}\\n  ایمیل: ${body.customer_email}\\n  تلفن: ${body.customer_phone}\\n\\n📦 <b>آیتم‌های سفارش:</b>\\n${itemsList}\\n\\n💰 <b>جزئیات مالی:</b>\\n  هزینه ارسال: ${Number(body.shipping_cost ?? 0).toLocaleString('fa-IR')} تومان\\n  تخفیف: ${Number(body.discount ?? 0).toLocaleString('fa-IR')} تومان\\n  <b>مجموع کل: ${Number(body.total_price).toLocaleString('fa-IR')} تومان</b>\\n\\n💳 <b>روش پرداخت:</b> ${body.payment_method}\\n📍 <b>آدرس:</b> ${body.shipping_address}\\n✅ <b>وضعیت:</b> ${body.status === 'paid' ? 'پرداخت شده ✅' : body.status}\\n⏰ <b>زمان ثبت:</b> ${body.created_at}`;\nreturn { json: { message, order_id: body.order_id } };"
+      },
+      "id": "648cf7f2-ef1f-4ebd-a805-43e1747ed9fe",
+      "name": "ساخت پیام تلگرام",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1152,
+        1152
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "<__PLACEHOLDER_VALUE__YOUR_TELEGRAM_CHAT_ID__>",
+        "text": "={{ $json.message }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "6cf3837d-cacc-4235-9089-59339cdafe85",
+      "name": "ارسال پیام تلگرام",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1376,
+        1152
+      ],
+      "webhookId": "889a1edf-ffae-4f1c-bacd-e2ef171d2bcf",
+      "credentials": {
+        "telegramApi": {
+          "id": "kicAcxJ7BuovXttk",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": {
+          "status": "ok",
+          "message": "Notification sent"
+        },
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "46fb8c0a-d811-4f94-a02d-3daf971ea845",
+      "name": "پاسخ موفق",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1600,
+        1152
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": {
+          "status": "error",
+          "message": "Unauthorized"
+        },
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "id": "ca84960d-9a9c-4516-b24c-61911934532f",
+      "name": "پاسخ خطای احراز هویت",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1152,
+        1344
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Normalize Auth Payload": {
+      "main": [
+        [
+          {
+            "node": "Route Auth Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Auth Event": {
+      "main": [
+        [
+          {
+            "node": "Send Verification Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Password Reset Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Verification Email": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Password Reset Email": {
+      "main": [
+        [
+          {
+            "node": "Respond Reset Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Order Paid Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Secret Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Secret Token": {
+      "main": [
+        [
+          {
+            "node": "Build Invoice Email HTML",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Unauthorized",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Invoice Email HTML": {
+      "main": [
+        [
+          {
+            "node": "Send Order Confirmation Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Order Confirmation Email": {
+      "main": [
+        [
+          {
+            "node": "Respond Success1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Auth Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Auth Secret",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Auth Secret": {
+      "main": [
+        [
+          {
+            "node": "Normalize Auth Payload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Auth Unauthorized",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "دریافت سفارش جدید": {
+      "main": [
+        [
+          {
+            "node": "بررسی توکن امنیتی",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "بررسی توکن امنیتی": {
+      "main": [
+        [
+          {
+            "node": "ساخت پیام تلگرام",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "پاسخ خطای احراز هویت",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ساخت پیام تلگرام": {
+      "main": [
+        [
+          {
+            "node": "ارسال پیام تلگرام",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ارسال پیام تلگرام": {
+      "main": [
+        [
+          {
+            "node": "پاسخ موفق",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "ed526137-dfb3-4612-9fee-0da10f2513fc",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp",
+    "instanceId": "6c27ae0bf5b0952ed8c17e805d499955dd8594602908702bdb50ddf878148983"
+  },
+  "nodeGroups": [],
+  "id": "TAoxgG2aAdYV81px",
+  "tags": []
+}
