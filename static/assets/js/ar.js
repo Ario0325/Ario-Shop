@@ -45,16 +45,33 @@
         var pre = doc.getElementById("ar-preloader");
         if (!pre) return;
 
-        if (!root.classList.contains("is-preloading")) {
+        var page = doc.getElementById("ar-page");
+        var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        var finished = false;
+
+        var dismiss = function () {
+            if (finished) return;
+            finished = true;
             pre.classList.add("is-done");
+            root.classList.remove("is-preloading");
             root.classList.add("is-preloaded");
+            if (page) page.removeAttribute("inert");
+            store.sset("ar-loaded", "1");
+            setTimeout(function () {
+                if (pre.parentNode) pre.parentNode.removeChild(pre);
+            }, 420);
+        };
+
+        if (!root.classList.contains("is-preloading") || reduce) {
+            dismiss();
             return;
         }
 
+        if (page) page.setAttribute("inert", "");
+
         var fill = $("[data-preload-bar]", pre);
         var pct = $("[data-preload-pct]", pre);
-        var value = 6;
-        var finished = false;
+        var value = 8;
         var started = performance.now();
 
         var paint = function () {
@@ -65,33 +82,21 @@
         paint();
 
         var ticker = setInterval(function () {
-            var target = clamp(((performance.now() - started) / 1400) * 82, 6, 82);
+            var target = clamp(((performance.now() - started) / 380) * 92, 8, 92);
             if (target > value) { value = target; paint(); }
-        }, 90);
+        }, 45);
 
         var finish = function () {
             if (finished) return;
-            finished = true;
             clearInterval(ticker);
             value = 100;
             paint();
-            setTimeout(function () {
-                pre.classList.add("is-done");
-                root.classList.remove("is-preloading");
-                root.classList.add("is-preloaded");
-                store.sset("ar-loaded", "1");
-                setTimeout(function () {
-                    if (pre.parentNode) pre.parentNode.removeChild(pre);
-                }, 700);
-            }, 280);
+            setTimeout(dismiss, 110);
         };
 
-        if (doc.readyState === "complete") setTimeout(finish, 480);
-        else {
-            on(window, "load", function () { setTimeout(finish, 320); });
-            /* slow network bail-out: never trap the visitor behind the loader */
-            setTimeout(finish, 4500);
-        }
+        /* the loader is decorative: never wait for the full window load */
+        setTimeout(finish, 420);
+        on(window, "load", finish);
     }
 
     /* ----------------------------------------------------------------------
@@ -350,6 +355,26 @@
                     top.classList.toggle("is-footerview", entries[0].isIntersecting);
                 }, { threshold: 0 }).observe(footer);
             }
+        }
+
+        var progress = $("[data-ar-scroll-progress]");
+        if (progress) {
+            var pTicking = false;
+            var paintProgress = function () {
+                var max = doc.documentElement.scrollHeight - window.innerHeight;
+                var ratio = max > 0 ? Math.min(Math.max((window.scrollY || 0) / max, 0), 1) : 0;
+                progress.style.transform = "scaleX(" + ratio + ")";
+            };
+            on(window, "scroll", function () {
+                if (pTicking) return;
+                pTicking = true;
+                requestAnimationFrame(function () {
+                    paintProgress();
+                    pTicking = false;
+                });
+            }, { passive: true });
+            on(window, "resize", paintProgress);
+            paintProgress();
         }
     }
 
@@ -646,6 +671,14 @@
                 else form.submit();
             });
         }
+
+        var buybar = $(".ar-buybar");
+        var mainForm = doc.getElementById("ar-product-form");
+        if (buybar && mainForm && "IntersectionObserver" in window) {
+            new IntersectionObserver(function (entries) {
+                buybar.classList.toggle("is-visible", !entries[0].isIntersecting);
+            }, { threshold: 0 }).observe(mainForm);
+        }
     }
 
     /* ----------------------------------------------------------------------
@@ -653,6 +686,8 @@
        ---------------------------------------------------------------------- */
     function initQty() {
         $$("[data-ar-qty]").forEach(function (wrap) {
+            if (wrap.getAttribute("data-qty-ready") === "1") return;
+            wrap.setAttribute("data-qty-ready", "1");
             var input = $("[data-qty-input]", wrap);
             if (!input) return;
             var min = input.min !== "" ? +input.min : 1;
@@ -687,14 +722,532 @@
     }
 
     /* ----------------------------------------------------------------------
+       Cart: AJAX add/remove, live badges and drawer refresh
+       ---------------------------------------------------------------------- */
+    function faNum(n) {
+        return toFa(String(n == null ? 0 : n).replace(/\B(?=(\d{3})+(?!\d))/g, "٬"));
+    }
+
+    function markCartDrawerStale() {
+        var drawer = doc.getElementById("ar-drawer-cart");
+        if (!drawer) return;
+        drawer.setAttribute("data-stale", "1");
+        if (drawer.classList.contains("is-open") && window.fetch) {
+            drawer.dispatchEvent(new CustomEvent("ar:refresh-cart"));
+        }
+    }
+
+    function applyCartPayload(cart) {
+        if (!cart) return;
+
+        $$("[data-ar-cart-count]").forEach(function (el) {
+            el.textContent = faNum(cart.count || 0);
+            if (cart.count > 0) el.removeAttribute("hidden");
+            else el.setAttribute("hidden", "");
+            el.classList.remove("is-bump");
+            void el.offsetWidth;
+            el.classList.add("is-bump");
+        });
+
+        $$("[data-ar-cart-total]").forEach(function (el) {
+            el.textContent = cart.count ? cart.total_display : "خالی است";
+        });
+        $$("[data-ar-cart-shipping]").forEach(function (el) {
+            el.textContent = cart.shipping_display;
+        });
+        $$("[data-ar-cart-payable]").forEach(function (el) {
+            el.textContent = cart.total_payable_display;
+        });
+
+        var live = $("[data-ar-cart-live]");
+        if (live) {
+            live.textContent = cart.count
+                ? faNum(cart.count) + " کالا در سبد خرید"
+                : "سبد خرید خالی است";
+        }
+
+        markCartDrawerStale();
+    }
+
+    function flashAdded(btn) {
+        if (!btn || btn.dataset.arAdded === "1") return;
+        var original = btn.innerHTML;
+        btn.dataset.arAdded = "1";
+        btn.classList.add("is-added");
+        btn.innerHTML = '<i class="icon-check" aria-hidden="true"></i><span>اضافه شد</span>';
+        setTimeout(function () {
+            if (btn.dataset.arAdded !== "1") return;
+            btn.innerHTML = original;
+            btn.classList.remove("is-added");
+            delete btn.dataset.arAdded;
+        }, 1600);
+    }
+
+    function cartFetch(url, form) {
+        return fetch(url, {
+            method: "POST",
+            body: new FormData(form),
+            headers: { "X-Requested-With": "XMLHttpRequest", "Accept": "application/json" },
+            credentials: "same-origin"
+        }).then(function (res) {
+            return res.json().then(function (payload) {
+                return { status: res.status, payload: payload };
+            });
+        });
+    }
+
+    function initCartAjax() {
+        if (!window.fetch || !window.FormData) return;
+
+        on(doc, "submit", function (e) {
+            var form = e.target.closest("[data-ar-cart-add]");
+            if (!form) return;
+            if (form.dataset.arBusy === "1") { e.preventDefault(); return; }
+
+            e.preventDefault();
+            form.dataset.arBusy = "1";
+            var btn = form.querySelector("[data-ar-add-btn]");
+            if (btn) {
+                btn.classList.add("is-loading");
+                btn.disabled = true;
+            }
+
+            cartFetch(form.action, form).then(function (out) {
+                var payload = out.payload || {};
+                if (payload.cart) applyCartPayload(payload.cart);
+
+                if (payload.ok) {
+                    flashAdded(btn);
+                    var notice = payload.notice || {};
+                    toast(notice.level === "warning" ? "warning" : "success", "سبد خرید",
+                        notice.text || "محصول به سبد خرید اضافه شد.");
+                } else if (out.status === 409) {
+                    flashAdded(btn);
+                    toast("warning", "موجودی محدود", payload.message || "تعداد درخواستی موجود نیست.");
+                } else {
+                    toast("danger", "افزودن نشد", payload.message || "این محصول قابل افزودن نیست.");
+                }
+
+                doc.dispatchEvent(new CustomEvent("ar:cart:updated", { detail: payload }));
+            }).catch(function () {
+                toast("danger", "خطای ارتباط", "سبد به‌روزرسانی نشد؛ اتصال اینترنت را بررسی کنید.");
+            }).then(function () {
+                form.dataset.arBusy = "0";
+                if (btn) {
+                    btn.classList.remove("is-loading");
+                    btn.disabled = false;
+                }
+            });
+        });
+    }
+
+    function initCartDrawer() {
+        var drawer = doc.getElementById("ar-drawer-cart");
+        if (!drawer || !window.fetch) return;
+
+        var refresh = function () {
+            var url = drawer.getAttribute("data-ar-drawer-url");
+            if (!url) return;
+            var token = (drawer._arToken || 0) + 1;
+            drawer._arToken = token;
+            drawer.setAttribute("aria-busy", "true");
+
+            fetch(url, {
+                headers: { "X-Requested-With": "XMLHttpRequest", "Accept": "text/html" },
+                credentials: "same-origin",
+                cache: "no-store"
+            }).then(function (res) {
+                return res.text();
+            }).then(function (html) {
+                if (token !== drawer._arToken) return;
+                drawer.innerHTML = html;
+                drawer.setAttribute("data-stale", "0");
+                drawer.removeAttribute("aria-busy");
+                initQty();
+
+                if (drawer.classList.contains("is-open")) {
+                    var active = doc.activeElement;
+                    if (!active || active === doc.body || !drawer.contains(active)) {
+                        var close = $(".ar-drawer__close", drawer);
+                        if (close) {
+                            try { close.focus({ preventScroll: true }); } catch (err) { close.focus(); }
+                        }
+                    }
+                }
+            }).catch(function () {
+                drawer.setAttribute("data-stale", "1");
+                drawer.removeAttribute("aria-busy");
+            });
+        };
+
+        on(drawer, "ar:open", function () {
+            if (drawer.getAttribute("data-stale") === "1") refresh();
+        });
+        on(drawer, "ar:refresh-cart", refresh);
+
+        on(doc, "submit", function (e) {
+            var form = e.target.closest("[data-ar-cart-remove]");
+            if (!form) return;
+            if (form.dataset.arBusy === "1") { e.preventDefault(); return; }
+
+            e.preventDefault();
+            form.dataset.arBusy = "1";
+            var btn = form.querySelector("button");
+            if (btn) btn.disabled = true;
+
+            cartFetch(form.action, form).then(function (out) {
+                var payload = out.payload || {};
+                if (payload.cart) applyCartPayload(payload.cart);
+                if (payload.ok) toast("info", "سبد خرید", "محصول از سبد خرید حذف شد.");
+            }).catch(function () {
+                toast("danger", "خطای ارتباط", "حذف محصول انجام نشد؛ دوباره تلاش کنید.");
+            }).then(function () {
+                form.dataset.arBusy = "0";
+                if (btn) btn.disabled = false;
+            });
+        });
+    }
+
+    /* ----------------------------------------------------------------------
+       Live search suggestions (combobox)
+       ---------------------------------------------------------------------- */
+    var RECENT_KEY = "ar-recent-searches";
+    var PLACEHOLDER = "/static/assets/images/v2/placeholder-product.webp";
+
+    function readRecent() {
+        try {
+            var list = JSON.parse(store.get(RECENT_KEY) || "[]");
+            return Array.isArray(list) ? list : [];
+        } catch (e) { return []; }
+    }
+
+    function writeRecent(list) {
+        store.set(RECENT_KEY, JSON.stringify(list.slice(0, 6)));
+    }
+
+    function rememberSearch(q) {
+        q = String(q || "").trim();
+        if (!q) return;
+        writeRecent([q].concat(readRecent().filter(function (item) { return item !== q; })));
+    }
+
+    function openSuggest(input, panel, html) {
+        panel.innerHTML = html;
+        panel.hidden = false;
+        input.setAttribute("aria-expanded", "true");
+        input.removeAttribute("aria-activedescendant");
+        panel._active = -1;
+    }
+
+    function closeSuggest(input, panel) {
+        panel.hidden = true;
+        input.setAttribute("aria-expanded", "false");
+        input.removeAttribute("aria-activedescendant");
+        panel._active = -1;
+    }
+
+    function setActiveOption(input, panel, next) {
+        var items = $$("[data-suggest-item]", panel);
+        if (!items.length) return;
+        next = clamp(next, -1, items.length - 1);
+        items.forEach(function (item, i) {
+            var active = i === next;
+            item.classList.toggle("is-active", active);
+            item.setAttribute("aria-selected", active ? "true" : "false");
+            if (active) {
+                input.setAttribute("aria-activedescendant", item.id);
+                if (item.scrollIntoView) item.scrollIntoView({ block: "nearest" });
+            }
+        });
+        panel._active = next;
+        if (next === -1) input.removeAttribute("aria-activedescendant");
+    }
+
+    function suggestRecentHtml(prefix) {
+        var recent = readRecent();
+        if (!recent.length) return "";
+        return '<div class="ar-suggest__head"><span>جستجوهای اخیر</span>' +
+            '<button type="button" class="ar-suggest__clear" data-suggest-clear>پاک کردن</button></div>' +
+            recent.map(function (q, i) {
+                return '<div class="ar-suggest__recent">' +
+                    '<button type="button" class="ar-suggest__item" role="option" aria-selected="false" ' +
+                    'id="' + prefix + '-recent-' + i + '" data-suggest-item data-suggest-value="' + esc(q) + '">' +
+                    '<i class="icon-clock-o" aria-hidden="true"></i><span>' + esc(q) + '</span></button>' +
+                    '<button type="button" class="ar-suggest__recent-del" data-suggest-remove="' + esc(q) + '" ' +
+                    'aria-label="حذف ' + esc(q) + ' از جستجوهای اخیر"><i class="icon-close" aria-hidden="true"></i></button>' +
+                '</div>';
+            }).join("");
+    }
+
+    function suggestResultsHtml(payload, prefix) {
+        var html = "";
+        var products = payload.products || [];
+        var categories = payload.categories || [];
+
+        if (products.length) {
+            html += '<div class="ar-suggest__head"><span>محصولات</span></div>';
+            html += products.map(function (item, i) {
+                var img = item.image || PLACEHOLDER;
+                var meta = item.price_display;
+                if (item.rating) {
+                    meta += ' · <span class="ar-suggest__rating"><i class="icon-star" aria-hidden="true"></i>' +
+                        toFa(item.rating) + (item.review_count ? " (" + toFa(item.review_count) + ")" : "") + '</span>';
+                }
+                return '<a class="ar-suggest__item" role="option" aria-selected="false" ' +
+                    'id="' + prefix + '-product-' + i + '" data-suggest-item href="' + esc(item.url) + '">' +
+                    '<img class="ar-suggest__thumb" src="' + esc(img) + '" alt="" width="40" height="50" loading="lazy" decoding="async">' +
+                    '<span class="ar-suggest__text"><span class="ar-suggest__name">' + esc(item.name) + '</span>' +
+                    '<span class="ar-suggest__meta">' + meta + '</span></span>' +
+                '</a>';
+            }).join("");
+        }
+
+        if (categories.length) {
+            html += '<div class="ar-suggest__head"><span>دسته‌بندی‌ها</span></div>';
+            html += categories.map(function (item, i) {
+                return '<a class="ar-suggest__item ar-suggest__item--cat" role="option" aria-selected="false" ' +
+                    'id="' + prefix + '-category-' + i + '" data-suggest-item href="' + esc(item.url) + '">' +
+                    '<i class="icon-tag" aria-hidden="true"></i>' +
+                    '<span class="ar-suggest__text"><span class="ar-suggest__name">' + esc(item.name) + '</span>' +
+                    '<span class="ar-suggest__meta">' + toFa(item.product_count) + ' محصول</span></span>' +
+                '</a>';
+            }).join("");
+        }
+
+        if (!html) {
+            html = '<div class="ar-suggest__empty"><i class="icon-search" aria-hidden="true"></i>' +
+                '<p>چیزی برای «' + esc(payload.query || "") + '» پیدا نشد.</p>' +
+                '<a class="ar-suggest__all" href="' + esc(payload.search_url || "#") + '">مشاهدهٔ همهٔ نتایج</a></div>';
+        } else if (payload.search_url) {
+            html += '<a class="ar-suggest__all" href="' + esc(payload.search_url) + '">مشاهدهٔ همهٔ نتایج</a>';
+        }
+
+        return html;
+    }
+
+    function initSuggest() {
+        var inputs = $$("[data-ar-suggest]");
+        if (!inputs.length || !window.fetch) return;
+
+        inputs.forEach(function (input) {
+            var form = input.form;
+            var url = input.getAttribute("data-ar-suggest-url");
+            if (!form || !url) return;
+
+            var panel = doc.createElement("div");
+            panel.className = "ar-suggest";
+            panel.id = (input.id || "ar-suggest-input") + "-panel";
+            panel.setAttribute("role", "listbox");
+            panel.hidden = true;
+            (form.closest(".ar-omni") || form).appendChild(panel);
+
+            input.setAttribute("role", "combobox");
+            input.setAttribute("aria-autocomplete", "list");
+            input.setAttribute("aria-expanded", "false");
+            input.setAttribute("aria-controls", panel.id);
+
+            var prefix = panel.id.replace(/[^a-zA-Z0-9_-]/g, "");
+            var controller = null;
+
+            var runSearch = function () {
+                var q = input.value.trim();
+                if (q.length < 2) {
+                    var recentHtml = suggestRecentHtml(prefix);
+                    if (recentHtml) openSuggest(input, panel, recentHtml);
+                    else closeSuggest(input, panel);
+                    return;
+                }
+
+                if (controller) controller.abort();
+                controller = window.AbortController ? new AbortController() : null;
+                openSuggest(input, panel, '<div class="ar-suggest__loading" role="status">در حال جستجو…</div>');
+
+                fetch(url + "?q=" + encodeURIComponent(q), {
+                    headers: { "X-Requested-With": "XMLHttpRequest", "Accept": "application/json" },
+                    credentials: "same-origin",
+                    signal: controller ? controller.signal : undefined
+                }).then(function (res) {
+                    return res.json();
+                }).then(function (payload) {
+                    if (input.value.trim() !== q) return;
+                    openSuggest(input, panel, suggestResultsHtml(payload, prefix));
+                }).catch(function (err) {
+                    if (err && err.name === "AbortError") return;
+                    openSuggest(input, panel,
+                        '<div class="ar-suggest__empty"><p>پیشنهادها در دسترس نیستند.</p>' +
+                        '<a class="ar-suggest__all" href="' + esc(form.action) + '?q=' + encodeURIComponent(q) +
+                        '">جستجوی مستقیم</a></div>');
+                });
+            };
+
+            var debounced = debounce(runSearch, 220);
+
+            on(input, "input", function () {
+                if (input.value.trim().length < 2) {
+                    if (controller) controller.abort();
+                }
+                debounced();
+            });
+
+            on(input, "focus", function () {
+                if (!input.value.trim()) {
+                    var html = suggestRecentHtml(prefix);
+                    if (html) openSuggest(input, panel, html);
+                } else if (input.value.trim().length >= 2) {
+                    runSearch();
+                }
+            });
+
+            on(input, "keydown", function (e) {
+                if (panel.hidden || !panel.innerHTML) return;
+                var items = $$("[data-suggest-item]", panel);
+                var active = typeof panel._active === "number" ? panel._active : -1;
+
+                if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    setActiveOption(input, panel, active + 1 >= items.length ? 0 : active + 1);
+                } else if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    setActiveOption(input, panel, active - 1 < 0 ? items.length - 1 : active - 1);
+                } else if (e.key === "Home" && active !== -1) {
+                    e.preventDefault();
+                    setActiveOption(input, panel, 0);
+                } else if (e.key === "End" && active !== -1) {
+                    e.preventDefault();
+                    setActiveOption(input, panel, items.length - 1);
+                } else if (e.key === "Enter" && active !== -1 && items[active]) {
+                    var item = items[active];
+                    e.preventDefault();
+                    rememberSearch(input.value);
+                    if (item.tagName === "A") window.location.href = item.getAttribute("href");
+                    else {
+                        input.value = item.getAttribute("data-suggest-value") || "";
+                        if (typeof form.requestSubmit === "function") form.requestSubmit();
+                        else form.submit();
+                    }
+                } else if (e.key === "Escape") {
+                    e.preventDefault();
+                    closeSuggest(input, panel);
+                }
+            });
+
+            on(input.form, "submit", function () { rememberSearch(input.value); });
+
+            on(panel, "mousedown", function (e) {
+                /* keep focus in the input while clicking a suggestion */
+                e.preventDefault();
+            });
+
+            on(panel, "click", function (e) {
+                var remove = e.target.closest("[data-suggest-remove]");
+                if (remove) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    var value = remove.getAttribute("data-suggest-remove");
+                    writeRecent(readRecent().filter(function (item) { return item !== value; }));
+                    runSearch();
+                    return;
+                }
+
+                var clear = e.target.closest("[data-suggest-clear]");
+                if (clear) {
+                    e.preventDefault();
+                    writeRecent([]);
+                    closeSuggest(input, panel);
+                    return;
+                }
+
+                var option = e.target.closest("[data-suggest-item]");
+                if (option) rememberSearch(input.value);
+            });
+        });
+
+        on(doc, "click", function (e) {
+            if (e.target.closest("[data-ar-suggest]") || e.target.closest(".ar-suggest")) return;
+            inputs.forEach(function (input) {
+                var form = input.form;
+                var panel = form && form.querySelector(".ar-suggest");
+                if (panel && !panel.hidden) closeSuggest(input, panel);
+            });
+        });
+
+        on(doc, "ar:close", function () {
+            inputs.forEach(function (input) {
+                var form = input.form;
+                var panel = form && form.querySelector(".ar-suggest");
+                if (panel && !panel.hidden) closeSuggest(input, panel);
+            });
+        });
+    }
+
+    /* ----------------------------------------------------------------------
        Catalogue filters: restore multi-value state + chip toggles
        ---------------------------------------------------------------------- */
     function initFilters() {
         var params = new URLSearchParams(window.location.search);
-        var multi = ["brand", "size"];
+        var multi = ["brand", "size", "color"];
         var singles = ["min_price", "max_price"];
+        var forms = $$("[data-ar-filter-form]");
+        if (!forms.length) return;
 
-        $$("[data-ar-filter-form]").forEach(function (form) {
+        function badgeHosts() {
+            return [
+                $(".ar-filters__title"),
+                $("#ar-filters .ar-drawer__title"),
+                $('[data-ar-open="ar-filters"]')
+            ].filter(Boolean);
+        }
+
+        function paintBadge(count) {
+            badgeHosts().forEach(function (host) {
+                var badge = $("[data-ar-filter-count]", host);
+                if (count <= 0) {
+                    if (badge) badge.hidden = true;
+                    return;
+                }
+                if (!badge) {
+                    badge = document.createElement("span");
+                    badge.className = "ar-count-dot";
+                    badge.setAttribute("data-ar-filter-count", "");
+                    host.appendChild(badge);
+                }
+                badge.hidden = false;
+                badge.textContent = faNum(count);
+            });
+        }
+
+        function countApplied(form) {
+            var count = 0;
+            ["brand", "size", "color"].forEach(function (name) {
+                count += $$('input[name="' + name + '"]:checked', form).length;
+            });
+            singles.forEach(function (name) {
+                var input = $('input[name="' + name + '"]', form);
+                if (input && input.value.trim() !== "") count += 1;
+            });
+            var available = $('input[name="available"]', form);
+            if (available && available.checked) count += 1;
+            var category = $('input[name="category"]:checked', form);
+            if (category && category.value) count += 1;
+            return count;
+        }
+
+        function syncOtherForms(source, changed) {
+            forms.forEach(function (other) {
+                if (other === source) return;
+                $$('input[name="' + changed.name + '"]', other).forEach(function (input) {
+                    if (input.type === "checkbox" && changed.type === "checkbox") {
+                        if (input.value === changed.value) input.checked = changed.checked;
+                    } else if (input.type === "radio" && changed.type === "radio") {
+                        if (input.value === changed.value) input.checked = changed.checked;
+                    } else if (changed.type === "text") {
+                        input.value = changed.value;
+                    }
+                });
+            });
+        }
+
+        forms.forEach(function (form) {
             var inputs = $$("input", form);
 
             multi.forEach(function (name) {
@@ -720,8 +1273,22 @@
             on(form, "change", function (e) {
                 var chip = e.target.closest(".ar-size");
                 if (chip) chip.classList.toggle("is-active", e.target.checked);
+                syncOtherForms(form, e.target);
+                paintBadge(countApplied(form));
+            });
+
+            on(form, "submit", function () {
+                var main = $(".ar-plp__main");
+                if (main) main.setAttribute("aria-busy", "true");
+                var btn = $('button[type="submit"]', form);
+                if (btn) {
+                    btn.classList.add("is-loading");
+                    btn.disabled = true;
+                }
             });
         });
+
+        paintBadge(countApplied(forms[0]));
     }
 
     /* ----------------------------------------------------------------------
@@ -1076,7 +1643,10 @@
         }, { rootMargin: "0px 0px -6% 0px", threshold: 0.06 });
 
         items.forEach(function (el, i) {
-            if (!el.style.getPropertyValue("--ar-delay")) el.style.setProperty("--ar-delay", String(i % 5));
+            if (!el.style.getPropertyValue("--ar-delay")) {
+                var delay = el.getAttribute("data-ar-delay");
+                el.style.setProperty("--ar-delay", delay === null ? String(i % 5) : delay);
+            }
             io.observe(el);
         });
     }
@@ -1157,7 +1727,12 @@
     function initMisc() {
         $$("[data-ar-autosubmit]").forEach(function (field) {
             on(field, "change", function () {
-                if (field.form) field.form.submit();
+                if (!field.form) return;
+                var main = $(".ar-plp__main");
+                if (main) main.setAttribute("aria-busy", "true");
+                var btn = $('button[type="submit"]', field.form);
+                if (btn) btn.classList.add("is-loading");
+                field.form.submit();
             });
         });
 
@@ -1177,6 +1752,33 @@
 
         $$("img").forEach(function (img) {
             if (!img.hasAttribute("decoding")) img.setAttribute("decoding", "async");
+        });
+    }
+
+    /* ----------------------------------------------------------------------
+       Image decode + shimmer
+       ---------------------------------------------------------------------- */
+    function initImages() {
+        $$("img[data-ar-img]").forEach(function (img) {
+            var media = img.closest(".product-media");
+            if (media) media.classList.add("is-loading");
+
+            function done() {
+                img.classList.add("is-ready");
+                if (media) media.classList.remove("is-loading");
+            }
+
+            if (img.complete && img.naturalWidth) {
+                done();
+                return;
+            }
+            if (typeof img.decode === "function") {
+                img.decode().then(done).catch(done);
+            } else {
+                on(img, "load", done);
+                on(img, "error", done);
+            }
+            on(img, "error", done);
         });
     }
 
@@ -1246,6 +1848,7 @@
         initConfirm();
         initHeader();
         initSearchShortcut();
+        initSuggest();
         initShelves();
         initMega();
         initSubmenus();
@@ -1253,12 +1856,15 @@
         initGalleries();
         initVariants();
         initQty();
+        initCartAjax();
+        initCartDrawer();
         initFilters();
         initOtp();
         initPasswords();
         initValidation();
         initDigits();
         initFaText();
+        initImages();
         initToasts();
         initReveal();
         initCountdown();

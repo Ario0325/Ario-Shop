@@ -1,0 +1,25 @@
+{% load number_tags %}
+{% comment %}
+    نوار پیشرفت ارسال رایگان. کلیدهای context:
+    is_free_shipping، free_shipping_remaining، free_shipping_percent
+{% endcomment %}
+<div class="ar-ship{% if is_free_shipping %} is-done{% endif %}">
+    {% if is_free_shipping %}
+    <p class="ar-ship__msg">
+        <i class="icon-check" aria-hidden="true"></i>
+        ارسال این سفارش رایگان است.
+    </p>
+    {% else %}
+    <p class="ar-ship__msg">
+        <i class="icon-truck" aria-hidden="true"></i>
+        <span><b>{{ free_shipping_remaining|toman }}</b> دیگر تا ارسال رایگان</span>
+    </p>
+    {% endif %}
+    <div class="ar-ship__bar" role="progressbar"
+         aria-label="پیشرفت تا ارسال رایگان"
+         aria-valuemin="0" aria-valuemax="100"
+         aria-valuenow="{{ free_shipping_percent|default:0 }}"
+         style="--ar-progress: {{ free_shipping_percent|default:0 }}%">
+        <span></span>
+    </div>
+</div>

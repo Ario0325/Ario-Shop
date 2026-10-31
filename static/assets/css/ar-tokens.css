@@ -105,7 +105,7 @@
     --text:            var(--ink-900);
     --text-2:          var(--ink-700);
     --muted:           var(--ink-500);
-    --faint:           var(--ink-300);
+    --faint:           #75636C;
     --on-dark:         #FBF4EF;
 
     --border:          var(--sand-300);
@@ -235,7 +235,7 @@ html.is-hdr-compact { --hdr-offset: 62px; }
     --text:            #F6ECE6;
     --text-2:          #E2D2CB;
     --muted:           #B9A6AF;
-    --faint:           #8C7884;
+    --faint:           #A08C98;
     --on-dark:         #FBF4EF;
 
     --border:          #3A2430;
@@ -290,7 +290,7 @@ html.is-hdr-compact { --hdr-offset: 62px; }
         --text:            #F6ECE6;
         --text-2:          #E2D2CB;
         --muted:           #B9A6AF;
-        --faint:           #8C7884;
+        --faint:           #A08C98;
         --border:          #3A2430;
         --border-2:        #4A2F3D;
         --border-soft:     rgba(246, 236, 230, .08);

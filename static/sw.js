@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ario-shop-v9';
+const CACHE_NAME = 'ario-shop-v11';
 const STATIC_ASSETS = [
     '/static/assets/css/ario-icons.css',
     '/static/assets/css/ar-tokens.css',
@@ -66,7 +66,9 @@ self.addEventListener('fetch', (event) => {
 });
 
 async function cacheFirst(request) {
-    const cached = await caches.match(request, { ignoreSearch: true });
+    // Exact match (including ?v=) so a bumped asset version always comes from
+    // the network instead of an older cached copy.
+    const cached = await caches.match(request);
     if (cached) return cached;
     try {
         const response = await fetch(request);
@@ -76,6 +78,9 @@ async function cacheFirst(request) {
         }
         return response;
     } catch {
+        // Offline: a same-path older version is better than nothing.
+        const fallback = await caches.match(request, { ignoreSearch: true });
+        if (fallback) return fallback;
         return new Response('آفلاین', { status: 503, statusText: 'Offline' });
     }
 }

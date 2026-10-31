@@ -110,7 +110,7 @@ Name:     Gmail SMTP
 Host:     smtp.gmail.com
 Port:     465
 User:     bardiaabdi1393@gmail.com
-Password: wokw kyci lswj uqqd
+Password: [REDACTED-GMAIL-APP-PASSWORD-REVOKE-IT]
 SSL/TLS:  true
 ```
 
@@ -169,7 +169,7 @@ SSL/TLS:  true
 ```bash
 curl -X POST https://quiet-field-a090.mimoomim456.workers.dev/webhook/django-auth-event \
   -H "Content-Type: application/json" \
-  -d '{"event":"register","email":"test@example.com","username":"test","code":"123456","secret_token":"ario-shop-secret-token","sender_email":"bardiaabdi1393@gmail.com"}'
+  -d '{"event":"register","email":"test@example.com","username":"test","code":"123456","secret_token":"CHANGE_ME_N8N_WEBHOOK_SECRET","sender_email":"bardiaabdi1393@gmail.com"}'
 ```
 
 پاسخ موفق: `{"status":"ok","message":"email sent"}`
@@ -178,7 +178,7 @@ curl -X POST https://quiet-field-a090.mimoomim456.workers.dev/webhook/django-aut
 ```bash
 curl -X POST https://quiet-field-a090.mimoomim456.workers.dev/webhook/order-paid \
   -H "Content-Type: application/json" \
-  -d '{"secret_token":"ario-shop-secret-token","order_id":1,"order_number":"TEST-001","customer_name":"test","customer_email":"test@example.com","payment_status":"paid","total_price":100000,"shipping_cost":0,"discount":0,"created_at":"2026-06-15T10:00:00","shipping_address":"test","items":[{"name":"محصول تست","quantity":1,"unit_price":100000,"total_price":100000}],"sender_email":"bardiaabdi1393@gmail.com"}'
+  -d '{"secret_token":"CHANGE_ME_N8N_WEBHOOK_SECRET","order_id":1,"order_number":"TEST-001","customer_name":"test","customer_email":"test@example.com","payment_status":"paid","total_price":100000,"shipping_cost":0,"discount":0,"created_at":"2026-06-15T10:00:00","shipping_address":"test","items":[{"name":"محصول تست","quantity":1,"unit_price":100000,"total_price":100000}],"sender_email":"bardiaabdi1393@gmail.com"}'
 ```
 
 پاسخ موفق: `{"status":"success","message":"Email sent successfully"}`
@@ -213,7 +213,7 @@ curl -X POST https://quiet-field-a090.mimoomim456.workers.dev/webhook/order-paid
 
 ### n8n خطای 401 برمی‌گرداند (Unauthorized)
 - مطمئن شوید `secret_token` در payload وجود دارد
-- مقدار آن باید `ario-shop-secret-token` باشد
+- مقدار آن باید `CHANGE_ME_N8N_WEBHOOK_SECRET` باشد
 
 ### ایمیل نمی‌آید
 - تب **Executions** در n8n را چک کنید — آیا webhook دریافت شده؟
@@ -258,7 +258,7 @@ Ario/
      "email": "user@example.com",
      "username": "ali",
      "code": "847291",
-     "secret_token": "ario-shop-secret-token",
+     "secret_token": "CHANGE_ME_N8N_WEBHOOK_SECRET",
      "sender_email": "bardiaabdi1393@gmail.com"
    }
 3. Django requests.post() به Cloudflare Worker

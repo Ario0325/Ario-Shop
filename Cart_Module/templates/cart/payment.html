@@ -68,10 +68,12 @@
                     <i class="icon-check-circle-o ar-gateway__check" aria-hidden="true"></i>
                 </div>
 
+                {% if simulated_payment_enabled %}
                 <p class="ar-hint mt-3">
                     <i class="icon-info-circle" aria-hidden="true"></i>
                     این نسخه آزمایشی است و مبلغی از حساب شما کسر نمی‌شود؛ پس از تأیید، فاکتور سفارش صادر می‌شود.
                 </p>
+                {% endif %}
             </section>
         </div>
 
@@ -121,7 +123,7 @@
                     <i class="icon-check-circle-o" aria-hidden="true"></i>
                     مشاهده فاکتور
                 </a>
-                {% else %}
+                {% elif simulated_payment_enabled %}
                 <form method="post" action="{% url 'cart:payment' order.id %}" data-ar-lock class="ar-summary__cta">
                     {% csrf_token %}
                     <button type="submit" class="ar-btn ar-btn--gold ar-btn--block ar-btn--lg">
@@ -129,6 +131,11 @@
                         پرداخت و تکمیل سفارش
                     </button>
                 </form>
+                {% else %}
+                <div class="ar-hint mt-3" role="status">
+                    <i class="icon-info-circle" aria-hidden="true"></i>
+                    درگاه پرداخت آنلاین به‌زودی فعال می‌شود. سفارش شما ثبت شده و برای هماهنگی پرداخت با پشتیبانی تماس بگیرید.
+                </div>
                 {% endif %}
 
                 <p class="ar-summary__hint">

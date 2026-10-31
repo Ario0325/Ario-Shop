@@ -3,10 +3,11 @@
     drawer), so no element ids are used; `form_id` is optional.
 {% endcomment %}
 {% load number_tags %}
-<form class="ar-filterform" method="get" action="{% url 'products:list' %}"
+<form class="ar-filterform" method="get" action="{{ request.path }}"
       {% if form_id %}id="{{ form_id }}"{% endif %} data-ar-filter-form>
     <input type="hidden" name="sort" value="{{ current_sort|default:'popularity' }}">
 
+    {% if not hide_category %}
     <details class="ar-fgroup" open>
         <summary>
             دسته‌بندی
@@ -27,6 +28,7 @@
             {% endfor %}
         </div>
     </details>
+    {% endif %}
 
     {% if brands %}
     <details class="ar-fgroup" open>
@@ -38,7 +40,7 @@
             {% for brand in brands %}
             <label class="ar-fcheck">
                 <input type="checkbox" name="brand" value="{{ brand.slug }}"
-                       {% if brand.slug == request.GET.brand %}checked{% endif %}>
+                       {% if brand.slug in selected_brands %}checked{% endif %}>
                 <span>{{ brand.name }}</span>
                 <span class="ar-fcheck__count">{{ brand.product_count|ar_digits }}</span>
             </label>
@@ -68,6 +70,28 @@
         </div>
     </details>
 
+    {% if colors %}
+    <details class="ar-fgroup" open>
+        <summary>
+            رنگ
+            <i class="icon-angle-down ar-caret" aria-hidden="true"></i>
+        </summary>
+        <div class="ar-fgroup__body">
+            <div class="ar-colors">
+                {% for color in colors %}
+                <label class="ar-color" title="{{ color.name }}">
+                    <input type="checkbox" name="color" value="{{ color.name }}"
+                           {% if color.name in selected_colors %}checked{% endif %}>
+                    <span class="ar-color__swatch" style="--swatch: {{ color.code }}" aria-hidden="true"></span>
+                    <span class="ar-color__name">{{ color.name }}</span>
+                    <span class="ar-fcheck__count">{{ color.product_count|ar_digits }}</span>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+    </details>
+    {% endif %}
+
     <details class="ar-fgroup" open>
         <summary>
             سایز
@@ -75,12 +99,12 @@
         </summary>
         <div class="ar-fgroup__body">
             <div class="ar-sizes">
-                <label class="ar-size"><input type="checkbox" name="size" value="xs"><span>XS</span></label>
-                <label class="ar-size"><input type="checkbox" name="size" value="s"><span>S</span></label>
-                <label class="ar-size"><input type="checkbox" name="size" value="m"><span>M</span></label>
-                <label class="ar-size"><input type="checkbox" name="size" value="l"><span>L</span></label>
-                <label class="ar-size"><input type="checkbox" name="size" value="xl"><span>XL</span></label>
-                <label class="ar-size"><input type="checkbox" name="size" value="xxl"><span>XXL</span></label>
+                <label class="ar-size"><input type="checkbox" name="size" value="xs" {% if 'xs' in selected_sizes %}checked{% endif %}><span>XS</span></label>
+                <label class="ar-size"><input type="checkbox" name="size" value="s" {% if 's' in selected_sizes %}checked{% endif %}><span>S</span></label>
+                <label class="ar-size"><input type="checkbox" name="size" value="m" {% if 'm' in selected_sizes %}checked{% endif %}><span>M</span></label>
+                <label class="ar-size"><input type="checkbox" name="size" value="l" {% if 'l' in selected_sizes %}checked{% endif %}><span>L</span></label>
+                <label class="ar-size"><input type="checkbox" name="size" value="xl" {% if 'xl' in selected_sizes %}checked{% endif %}><span>XL</span></label>
+                <label class="ar-size"><input type="checkbox" name="size" value="xxl" {% if 'xxl' in selected_sizes %}checked{% endif %}><span>XXL</span></label>
             </div>
         </div>
     </details>
@@ -103,6 +127,6 @@
             <i class="icon-check" aria-hidden="true"></i>
             اعمال فیلترها
         </button>
-        <a class="ar-btn ar-btn--outline ar-btn--block" href="{% url 'products:list' %}">پاک کردن</a>
+        <a class="ar-btn ar-btn--outline ar-btn--block" href="{{ filter_clear_url|default:request.path }}">پاک کردن</a>
     </div>
 </form>

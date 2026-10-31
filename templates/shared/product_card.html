@@ -17,15 +17,15 @@
         <a href="{{ product.get_absolute_url }}" aria-label="{{ product.name }}">
             {% with imgs.0 as main %}
             {% if main %}
-            <img class="product-image" src="{{ main.image.url }}" alt="{{ main.alt_text|default:product.name }}"
+            <img class="product-image" data-ar-img src="{{ main.image.url }}" alt="{{ main.alt_text|default:product.name }}"
                  loading="lazy" decoding="async" width="400" height="500">
             {% else %}
-            <img class="product-image" src="{% static 'assets/images/v2/placeholder-product.webp' %}" alt="{{ product.name }}"
+            <img class="product-image" data-ar-img src="{% static 'assets/images/v2/placeholder-product.webp' %}" alt="{{ product.name }}"
                  loading="lazy" decoding="async" width="400" height="500">
             {% endif %}
             {% endwith %}
             {% if imgs.1 %}
-            <img class="product-image-hover" src="{{ imgs.1.image.url }}" alt=""
+            <img class="product-image-hover" data-ar-img src="{{ imgs.1.image.url }}" alt=""
                  aria-hidden="true" loading="lazy" decoding="async" width="400" height="500">
             {% endif %}
         </a>
@@ -39,11 +39,12 @@
 
         <div class="product-action">
             {% if product.is_available and product.stock > 0 %}
-            <form action="{% url 'cart:add' product.id %}" method="post">
+            <form action="{% url 'cart:add' product.id %}" method="post" data-ar-cart-add>
                 {% csrf_token %}
                 <input type="hidden" name="quantity" value="1">
                 <input type="hidden" name="next" value="{{ request.path }}">
-                <button class="btn-product" type="submit">
+                <button class="btn-product" type="submit" data-ar-add-btn
+                        data-ar-add-label="افزودن به سبد">
                     <i class="icon-shopping-cart" aria-hidden="true"></i>
                     <span>افزودن به سبد</span>
                 </button>
@@ -73,6 +74,9 @@
             <span class="ratings" role="img" aria-label="امتیاز {{ product.get_rating_percentage|ar_digits }} درصد">
                 <span class="ratings-val" style="width: {{ product.get_rating_percentage }}%;"></span>
             </span>
+            {% if product.review_count %}
+            <span class="ratings-text">{{ product.review_count|ar_digits }} نظر</span>
+            {% endif %}
         </div>
         {% endif %}
 

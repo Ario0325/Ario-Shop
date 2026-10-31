@@ -21,7 +21,8 @@
     <div class="ar-drawer__body">
         <form class="ar-drawer__search" action="{% url 'products:search' %}" method="get" role="search">
             <label for="arDrawerSearch" class="ar-sr-only">جستجوی محصول</label>
-            <input id="arDrawerSearch" type="search" name="q" placeholder="جستجوی محصول…" autocomplete="off">
+            <input id="arDrawerSearch" type="search" name="q" placeholder="جستجوی محصول…" autocomplete="off"
+                   data-ar-suggest data-ar-suggest-url="{% url 'products:suggest' %}">
             <button type="submit" aria-label="جستجو"><i class="icon-search" aria-hidden="true"></i></button>
         </form>
 
@@ -124,67 +125,9 @@
 
 <!-- ══ cart drawer ═══════════════════════════════════════════════════════ -->
 <aside class="ar-drawer" id="ar-drawer-cart" role="dialog" aria-modal="true"
-       aria-labelledby="arCartTitle" aria-hidden="true">
-    <div class="ar-drawer__head">
-        <h2 class="ar-drawer__title" id="arCartTitle">
-            سبد خرید
-            <span class="ar-badge">{{ cart_count|default:0|ar_digits }}</span>
-        </h2>
-        <button class="ar-drawer__close" type="button" data-ar-close aria-label="بستن سبد خرید">
-            <i class="icon-close" aria-hidden="true"></i>
-        </button>
-    </div>
-
-    <div class="ar-drawer__body">
-        {% for item in cart_items_preview %}
-        <div class="ar-cartline">
-            <a href="{{ item.product.get_absolute_url }}" class="ar-cartline__img" tabindex="-1" aria-hidden="true">
-                {% with item.product.images.all.0 as img %}
-                {% if img %}
-                <img src="{{ img.image.url }}" alt="" loading="lazy" decoding="async" width="64" height="76">
-                {% else %}
-                <img src="{% static 'assets/images/v2/placeholder-product.webp' %}" alt="" loading="lazy" decoding="async" width="64" height="76">
-                {% endif %}
-                {% endwith %}
-            </a>
-            <div>
-                <a href="{{ item.product.get_absolute_url }}" class="ar-cartline__name">{{ item.product.name }}</a>
-                <span class="ar-cartline__meta">{{ item.quantity|ar_digits }} × {{ item.price|toman }}</span>
-            </div>
-            <form action="{% url 'cart:remove' item.product.id %}" method="post">
-                {% csrf_token %}
-                <input type="hidden" name="next" value="{{ request.path }}">
-                <button type="submit" class="ar-cartline__del" aria-label="حذف {{ item.product.name }}">
-                    <i class="icon-close" aria-hidden="true"></i>
-                </button>
-            </form>
-        </div>
-        {% empty %}
-        <div class="ar-empty">
-            <span class="ar-empty__icon"><i class="icon-shopping-cart" aria-hidden="true"></i></span>
-            <p><strong>سبد خرید شما خالی است</strong> محصولات تازه را ببینید و خرید را شروع کنید.</p>
-            <a class="ar-btn ar-btn--outline ar-btn--sm" href="{% url 'products:list' %}">شروع خرید</a>
-        </div>
-        {% endfor %}
-    </div>
-
-    {% if cart_items_preview %}
-    <div class="ar-drawer__foot">
-        <div class="ar-totalrow">
-            <span>جمع سبد خرید</span>
-            <strong>{{ cart_total|default:0|toman }}</strong>
-        </div>
-        <div class="ar-totalrow ar-totalrow--grand">
-            <span>مبلغ قابل پرداخت</span>
-            <strong>{{ cart_total|default:0|toman }}</strong>
-        </div>
-        <a class="ar-btn ar-btn--primary ar-btn--block mt-3" href="{% url 'cart:detail' %}">مشاهده سبد خرید</a>
-        <form method="post" action="{% url 'cart:checkout' %}" class="mt-2">
-            {% csrf_token %}
-            <button type="submit" class="ar-btn ar-btn--accent ar-btn--block">تکمیل خرید</button>
-        </form>
-    </div>
-    {% endif %}
+       aria-labelledby="arCartTitle" aria-hidden="true"
+       data-ar-drawer-url="{% url 'cart:drawer' %}">
+    {% include 'cart/_drawer.html' %}
 </aside>
 
 <!-- ══ search panel ══════════════════════════════════════════════════════ -->
@@ -196,7 +139,8 @@
             <i class="icon-search" aria-hidden="true"></i>
             <label for="arOverlaySearch" class="ar-sr-only">جستجوی محصولات</label>
             <input id="arOverlaySearch" type="search" name="q" value="{{ query|default:'' }}"
-                   placeholder="چه چیزی دنبال می‌کنید؟" autocomplete="off" data-ar-autofocus>
+                   placeholder="چه چیزی دنبال می‌کنید؟" autocomplete="off" data-ar-autofocus
+                   data-ar-suggest data-ar-suggest-url="{% url 'products:suggest' %}">
             <button type="submit">جستجو</button>
         </form>
 
@@ -211,13 +155,14 @@
 </div>
 
 <!-- ══ mobile bottom navigation ══════════════════════════════════════════ -->
+<p class="ar-sr-only" data-ar-cart-live aria-live="polite" aria-atomic="true"></p>
 <nav class="ar-bottomnav" aria-label="ناوبری سریع">
     <div class="ar-bottomnav__inner">
-        <a href="{% url 'index' %}" class="{% if request.path == '/' %}is-active{% endif %}">
+        <a href="{% url 'index' %}" class="{% if request.path == '/' %}is-active{% endif %}"{% if request.path == '/' %} aria-current="page"{% endif %}>
             <i class="icon-home" aria-hidden="true"></i>
             <span>خانه</span>
         </a>
-        <a href="{% url 'products:list' %}" class="{% if '/shop/' in request.path %}is-active{% endif %}">
+        <a href="{% url 'products:list' %}" class="{% if '/shop/' in request.path %}is-active{% endif %}"{% if '/shop/' in request.path %} aria-current="page"{% endif %}>
             <i class="icon-th-list" aria-hidden="true"></i>
             <span>فروشگاه</span>
         </a>
@@ -229,15 +174,15 @@
                 aria-expanded="false" aria-controls="ar-drawer-cart">
             <i class="icon-shopping-cart" aria-hidden="true"></i>
             <span>سبد</span>
-            {% if cart_count %}<span class="ar-bottomnav__badge">{{ cart_count|ar_digits }}</span>{% endif %}
+            <span class="ar-bottomnav__badge" data-ar-cart-count{% if not cart_count %} hidden{% endif %}>{{ cart_count|default:0|ar_digits }}</span>
         </button>
         {% if user.is_authenticated %}
-        <a href="{% url 'accounts:dashboard' %}" class="{% if '/accounts/' in request.path %}is-active{% endif %}">
+        <a href="{% url 'accounts:dashboard' %}" class="{% if '/accounts/' in request.path %}is-active{% endif %}"{% if '/accounts/' in request.path %} aria-current="page"{% endif %}>
             <i class="icon-user" aria-hidden="true"></i>
             <span>حساب</span>
         </a>
         {% else %}
-        <a href="{% url 'accounts:login_register' %}" class="{% if '/accounts/' in request.path %}is-active{% endif %}">
+        <a href="{% url 'accounts:login_register' %}" class="{% if '/accounts/' in request.path %}is-active{% endif %}"{% if '/accounts/' in request.path %} aria-current="page"{% endif %}>
             <i class="icon-user" aria-hidden="true"></i>
             <span>ورود</span>
         </a>

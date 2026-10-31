@@ -54,7 +54,8 @@
                 <span class="ar-omni__icon" aria-hidden="true"><i class="icon-search"></i></span>
                 <label for="arOmniSearch" class="ar-sr-only">جستجوی محصولات</label>
                 <input id="arOmniSearch" type="search" name="q" value="{{ query|default:'' }}"
-                       placeholder="جستجو در میان محصولات آریو شاپ…" autocomplete="off">
+                       placeholder="جستجو در میان محصولات آریو شاپ…" autocomplete="off"
+                       data-ar-suggest data-ar-suggest-url="{% url 'products:suggest' %}">
                 <kbd class="ar-omni__kbd" aria-hidden="true">Ctrl K</kbd>
                 <button class="ar-omni__submit" type="submit">جستجو</button>
             </form>
@@ -104,11 +105,11 @@
                     </span>
                     <span class="ar-cartbtn__text">
                         <span class="ar-cartbtn__eyebrow">سبد خرید</span>
-                        <span class="ar-cartbtn__value">
+                        <span class="ar-cartbtn__value" data-ar-cart-total>
                             {% if cart_total %}{{ cart_total|toman }}{% else %}خالی است{% endif %}
                         </span>
                     </span>
-                    <span class="ar-cartbtn__count">{{ cart_count|default:0|ar_digits }}</span>
+                    <span class="ar-cartbtn__count" data-ar-cart-count>{{ cart_count|default:0|ar_digits }}</span>
                 </button>
             </div>
         </div>

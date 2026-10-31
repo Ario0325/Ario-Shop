@@ -6,6 +6,7 @@ from decimal import Decimal
 
 import requests
 from django.conf import settings
+from django.core.cache import cache
 from django.db import transaction
 from django.utils import timezone
 
@@ -62,6 +63,65 @@ def sync_cart_to_db(request):
         CartItem.objects.filter(user=request.user).exclude(
             product_id__in=list(session_cart.keys())
         ).delete()
+
+
+def merge_cart_on_login(request):
+    """سبد مهمان سشن را با سبد ذخیره‌شدهٔ حساب ادغام می‌کند.
+
+    قاعدهٔ ادغام ``max`` است تا مقدار ثبت‌شده قبلی کم نشود و آیتم تکراری
+    ساخته نشود. سپس سبد سشن به‌روزرسانی می‌شود و در دیتابیس ذخیره می‌گردد.
+    """
+    if not request.user.is_authenticated:
+        return
+
+    session_cart = request.session.get(CART_SESSION_KEY) or {}
+    if session_cart:
+        from Products_Module.models import Product
+
+        valid_ids = set(
+            Product.objects.filter(pk__in=list(session_cart.keys()))
+            .values_list('pk', flat=True)
+        )
+        stored = {
+            item.product_id: item
+            for item in CartItem.objects.filter(user=request.user)
+        }
+        for raw_pid, raw_qty in session_cart.items():
+            try:
+                pid = int(raw_pid)
+                qty = int(raw_qty)
+            except (TypeError, ValueError):
+                continue
+            if qty < 1 or pid not in valid_ids:
+                continue
+            item = stored.get(pid)
+            merged = max(qty, item.quantity) if item else qty
+            if item:
+                if item.quantity != merged:
+                    item.quantity = merged
+                    item.save(update_fields=['quantity'])
+            else:
+                CartItem.objects.create(user=request.user, product_id=pid, quantity=merged)
+
+    load_cart_from_db(request)
+    sync_cart_to_db(request)
+    request.session['_cart_loaded'] = True
+    _clear_cart_cache(request)
+
+
+def cart_cache_key(request):
+    """کلید کش مشترک برای context سبد (هدر، دراور و صفحهٔ سبد)."""
+    if request.user.is_authenticated:
+        return f'cartctx2_user_{request.user.id}'
+    if request.session.session_key:
+        return f'cartctx2_session_{request.session.session_key}'
+    return None
+
+
+def _clear_cart_cache(request):
+    key = cart_cache_key(request)
+    if key:
+        cache.delete(key)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -200,6 +260,39 @@ def calculate_cart_with_discount(cart_items, discount_code):
     }
 
 
+def build_cart_totals(cart_items, discount_code=None):
+    """جمع سبد، تخفیف و هزینهٔ ارسال را در یک‌جا حساب می‌کند.
+
+    آستانهٔ ارسال رایگان روی مبلغ خالص کالاها (پس از تخفیف) اعمال می‌شود تا
+    با مبلغی که مشتری واقعاً بابت کالا می‌پردازد هم‌خوان باشد.
+    """
+    base = calculate_cart_with_discount(cart_items, discount_code)
+    goods_net = base['total_payable']
+    threshold = Decimal(getattr(settings, 'FREE_SHIPPING_THRESHOLD', 500000))
+    fee = Decimal(getattr(settings, 'FLAT_SHIPPING_FEE', 49000))
+
+    has_items = bool(cart_items)
+    is_free_shipping = (not has_items) or (goods_net >= threshold)
+    shipping_cost = Decimal('0') if is_free_shipping else fee
+    remaining = max(threshold - goods_net, Decimal('0')) if has_items else threshold
+    percent = 100 if is_free_shipping and has_items else 0
+    if has_items and threshold > 0 and not is_free_shipping:
+        percent = int(max(min((goods_net / threshold) * 100, 100), 0))
+
+    return {
+        'subtotal': base['subtotal'],
+        'discount_amount': base['discount_amount'],
+        'discounted_product_id': base['discounted_product_id'],
+        'goods_net': goods_net,
+        'shipping_cost': shipping_cost,
+        'total_payable': goods_net + shipping_cost,
+        'free_shipping_threshold': threshold,
+        'free_shipping_remaining': remaining,
+        'free_shipping_percent': percent,
+        'is_free_shipping': is_free_shipping,
+    }
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # سرویس ارسال ایمیل تأیید سفارش به n8n
 # ─────────────────────────────────────────────────────────────────────────────
@@ -213,7 +306,11 @@ class N8nOrderService:
 
     @classmethod
     def _build_headers(cls):
-        return {'Content-Type': 'application/json'}
+        headers = {'Content-Type': 'application/json'}
+        worker_secret = getattr(settings, 'WORKER_SHARED_SECRET', '')
+        if worker_secret:
+            headers['X-Worker-Secret'] = worker_secret
+        return headers
 
     @classmethod
     def _send_to_n8n(cls, payload):
@@ -302,13 +399,13 @@ class N8nOrderService:
             "secret_token": cls.WEBHOOK_SECRET,
             "order_id": order.id,
             "order_number": order.order_number,
-            "customer_name": customer_name or "?????",
+            "customer_name": customer_name or "مشتری",
             "customer_email": customer_email or "",
             "customer_phone": customer_phone,
             "total_price": int(order.subtotal),
             "shipping_cost": int(order.shipping_cost),
             "discount": int(order.discount_amount),
-            "payment_method": "??????",
+            "payment_method": "پرداخت آنلاین",
             "shipping_address": order.address,
             "items": items,
             "created_at": order.created_at.isoformat(),
@@ -325,9 +422,9 @@ class N8nOrderService:
             )
             response.raise_for_status()
             logger.info(
-                f"[telegram] ??????????? ????? ????? ??: order={order.order_number}"
+                f"[telegram] اعلان تلگرام با موفقیت ارسال شد: order={order.order_number}"
             )
             return True
         except Exception as e:
-            logger.error(f"[telegram] ??? ?? ????? ??????????? ??????: {e}")
+            logger.error(f"[telegram] خطا در ارسال اعلان تلگرام: {e}")
             return False

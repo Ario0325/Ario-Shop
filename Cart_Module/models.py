@@ -187,7 +187,8 @@ class DiscountCode(models.Model):
         if not user or not user.is_authenticated:
             return True  # کاربر مهمان - بررسی per_user اعمال نمی‌شود
         if self.usage_limit_per_user is not None:
-            user_usage = self.orders.filter(user=user).count()
+            # سفارش‌های لغوشده نباید سهمیهٔ کاربر را مصرف‌شده نگه دارند.
+            user_usage = self.orders.filter(user=user).exclude(status='cancelled').count()
             if user_usage >= self.usage_limit_per_user:
                 return False
         return True

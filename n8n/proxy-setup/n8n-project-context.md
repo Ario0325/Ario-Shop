@@ -27,13 +27,13 @@ Django (PythonAnywhere) → Cloudflare Worker (proxy) → n8n Cloud → SMTP →
   "code": "123456",
   "reset_link": "https://...",
   "sender_email": "shop@example.com",
-  "secret_token": "ario-shop-secret-token"
+  "secret_token": "CHANGE_ME_N8N_WEBHOOK_SECRET"
 }
 ```
 
 **جریان:**
 1. Auth Webhook → دریافت POST
-2. Validate Auth Secret → بررسی `secret_token` برابر با `ario-shop-secret-token`
+2. Validate Auth Secret → بررسی `secret_token` برابر با `CHANGE_ME_N8N_WEBHOOK_SECRET`
 3. Normalize Auth Payload → استخراج فیلدها
 4. Route Auth Event → مسیردهی بر اساس `event`:
    - `register` → ارسال ایمیل کد تأیید → پاسخ 200
@@ -49,7 +49,7 @@ Django (PythonAnywhere) → Cloudflare Worker (proxy) → n8n Cloud → SMTP →
 **ورودی:**
 ```json
 {
-  "secret_token": "ario-shop-secret-token",
+  "secret_token": "CHANGE_ME_N8N_WEBHOOK_SECRET",
   "order_id": 42,
   "order_number": "ORD-20260615-0042",
   "customer_name": "نام مشتری",
@@ -86,7 +86,7 @@ Django (PythonAnywhere) → Cloudflare Worker (proxy) → n8n Cloud → SMTP →
 
 ### امنیت
 - هر دو webhook با `secret_token` محافظت می‌شوند
-- مقدار توکن: `ario-shop-secret-token`
+- مقدار توکن: `CHANGE_ME_N8N_WEBHOOK_SECRET`
 - Cloudflare Worker فقط مسیرهای `/webhook/django-auth-event` و `/webhook/order-paid` را قبول می‌کند
 
 ### قالب‌بندی اعداد

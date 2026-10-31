@@ -267,7 +267,7 @@
                 "operation": "equals",
                 "type": "string"
               },
-              "rightValue": "ario-shop-secret-token"
+              "rightValue": "CHANGE_ME_N8N_WEBHOOK_SECRET"
             }
           ],
           "combinator": "and"
@@ -397,7 +397,7 @@
                 "operation": "equals",
                 "type": "string"
               },
-              "rightValue": "ario-shop-secret-token"
+              "rightValue": "CHANGE_ME_N8N_WEBHOOK_SECRET"
             }
           ],
           "options": {
@@ -468,7 +468,7 @@
                 "type": "string",
                 "operation": "equals"
               },
-              "rightValue": "ario-shop-secret-token"
+              "rightValue": "CHANGE_ME_N8N_WEBHOOK_SECRET"
             }
           ],
           "combinator": "and"

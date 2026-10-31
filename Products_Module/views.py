@@ -1,11 +1,13 @@
 from django.shortcuts import render, get_object_or_404, redirect
+from django.http import JsonResponse
 from django.core.paginator import Paginator
 from django.db.models import Q, Count, Min, Max, F, Avg, Prefetch
 from django.contrib import messages
 from django.urls import reverse
 from django.core.cache import cache
 from django_ratelimit.decorators import ratelimit
-from .models import Product, Category, Brand, ProductImage
+from Core_Module.templatetags.number_tags import toman as format_toman
+from .models import Product, Category, Brand, ProductColor, ProductImage
 from .forms import ProductReviewForm
 
 
@@ -48,6 +50,171 @@ def _price_range():
     return price_range
 
 
+SIZE_LABELS = {
+    'xs': 'XS', 's': 'S', 'm': 'M', 'l': 'L', 'xl': 'XL', 'xxl': 'XXL',
+}
+
+
+def _sidebar_colors():
+    """رنگ‌های قابل فیلتر با تعداد محصول."""
+    cache_key = 'active_colors_facet_v2'
+    colors = cache.get(cache_key)
+    if colors is None:
+        colors = list(
+            ProductColor.objects.filter(product__is_active=True)
+            .values('name')
+            .annotate(product_count=Count('product', distinct=True), code=Min('code'))
+            .order_by('-product_count', 'name')[:14]
+        )
+        cache.set(cache_key, colors, 60 * 15)
+    return colors
+
+
+FILTER_KEYS = ('brand', 'size', 'color', 'min_price', 'max_price', 'available', 'category')
+
+
+def _parse_price(value):
+    if value in (None, ''):
+        return None
+    table = str.maketrans('۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩', '01234567890123456789')
+    cleaned = str(value).translate(table).replace(',', '').replace('٬', '').strip()
+    try:
+        return max(int(cleaned), 0)
+    except (TypeError, ValueError):
+        return None
+
+
+def _apply_filters(products, request):
+    """اعمال یکسان فیلترها روی همهٔ مسیرهای کاتالوگ."""
+    brand_slugs = request.GET.getlist('brand')
+    if brand_slugs:
+        products = products.filter(brand__slug__in=brand_slugs)
+
+    sizes = request.GET.getlist('size')
+    if sizes:
+        products = products.filter(sizes__size__in=sizes).distinct()
+
+    colors = request.GET.getlist('color')
+    if colors:
+        products = products.filter(colors__name__in=colors).distinct()
+
+    min_price = _parse_price(request.GET.get('min_price'))
+    if min_price is not None:
+        products = products.filter(price__gte=min_price)
+
+    max_price = _parse_price(request.GET.get('max_price'))
+    if max_price is not None:
+        products = products.filter(price__lte=max_price)
+
+    if request.GET.get('available'):
+        products = products.filter(is_available=True, stock__gt=0)
+
+    return products
+
+
+def _sort_products(products, sort):
+    order = {
+        'date': '-created_at',
+        'price_low': 'price',
+        'price_high': '-price',
+        'rating': '-avg_rating',
+        'popularity': '-views_count',
+    }.get(sort, '-views_count')
+    if sort == 'rating':
+        return products.order_by(order, '-views_count')
+    return products.order_by(order)
+
+
+def _query_url(request, key=None, value=None):
+    params = request.GET.copy()
+    params.pop('page', None)
+    if key is not None:
+        if value is None:
+            params.pop(key, None)
+        else:
+            remaining = [item for item in params.getlist(key) if item != value]
+            if remaining:
+                params.setlist(key, remaining)
+            else:
+                params.pop(key, None)
+    encoded = params.urlencode()
+    return f'{request.path}?{encoded}' if encoded else request.path
+
+
+def _filter_clear_url(request):
+    params = request.GET.copy()
+    for key in FILTER_KEYS:
+        params.pop(key, None)
+    params.pop('page', None)
+    encoded = params.urlencode()
+    return f'{request.path}?{encoded}' if encoded else request.path
+
+
+def _filter_context(request, brands, category_path=None):
+    brand_names = {brand.slug: brand.name for brand in brands}
+    size_labels = {
+        'xs': 'XS', 's': 'S', 'm': 'M', 'l': 'L', 'xl': 'XL', 'xxl': 'XXL',
+    }
+    filters = []
+
+    if category_path is not None:
+        filters.append({'label': category_path.name, 'url': reverse('products:list')})
+    else:
+        selected_category = request.GET.get('category')
+        if selected_category:
+            filters.append({
+                'label': next(
+                    (cat.name for cat in _sidebar_categories() if cat.slug == selected_category),
+                    selected_category,
+                ),
+                'url': _query_url(request, 'category'),
+            })
+
+    for slug in request.GET.getlist('brand'):
+        filters.append({'label': brand_names.get(slug, slug), 'url': _query_url(request, 'brand', slug)})
+
+    for size in request.GET.getlist('size'):
+        filters.append({
+            'label': size_labels.get(size.lower(), size.upper()),
+            'url': _query_url(request, 'size', size),
+        })
+
+    for color in request.GET.getlist('color'):
+        filters.append({'label': color, 'url': _query_url(request, 'color', color)})
+
+    min_price = _parse_price(request.GET.get('min_price'))
+    if min_price is not None:
+        filters.append({
+            'label': f'از {format_toman(min_price)}',
+            'url': _query_url(request, 'min_price'),
+        })
+    max_price = _parse_price(request.GET.get('max_price'))
+    if max_price is not None:
+        filters.append({
+            'label': f'تا {format_toman(max_price)}',
+            'url': _query_url(request, 'max_price'),
+        })
+
+    if request.GET.get('available'):
+        filters.append({'label': 'فقط کالاهای موجود', 'url': _query_url(request, 'available')})
+
+    applied_count = sum(len(request.GET.getlist(key)) for key in ('brand', 'size', 'color'))
+    applied_count += sum(1 for key in ('min_price', 'max_price', 'available') if request.GET.get(key))
+    if category_path is None and request.GET.get('category'):
+        applied_count += 1
+
+    return {
+        'colors': _sidebar_colors(),
+        'selected_brands': request.GET.getlist('brand'),
+        'selected_sizes': request.GET.getlist('size'),
+        'selected_colors': request.GET.getlist('color'),
+        'applied_count': applied_count,
+        'active_filters': filters,
+        'filter_clear_url': _filter_clear_url(request),
+        'hide_category': category_path is not None,
+    }
+
+
 def product_list(request):
     """نمایش لیست محصولات با فیلترینگ - بهینه شده"""
 
@@ -60,46 +227,11 @@ def product_list(request):
         selected_category = get_object_or_404(Category, slug=category_slug, is_active=True)
         products = products.filter(category=selected_category)
 
-    # فیلتر برند
-    brand_slugs = request.GET.getlist('brand')
-    if brand_slugs:
-        products = products.filter(brand__slug__in=brand_slugs)
-
-    # فیلتر سایز
-    sizes = request.GET.getlist('size')
-    if sizes:
-        products = products.filter(sizes__size__in=sizes).distinct()
-
-    # فیلتر رنگ
-    colors = request.GET.getlist('color')
-    if colors:
-        products = products.filter(colors__code__in=colors).distinct()
-
-    # فیلتر قیمت
-    min_price = request.GET.get('min_price')
-    max_price = request.GET.get('max_price')
-    if min_price:
-        products = products.filter(price__gte=min_price)
-    if max_price:
-        products = products.filter(price__lte=max_price)
-
-    # فیلتر موجودی
-    only_available = request.GET.get('available')
-    if only_available:
-        products = products.filter(is_available=True, stock__gt=0)
+    products = _apply_filters(products, request)
 
     # مرتب‌سازی
     sort = request.GET.get('sort', 'popularity')
-    if sort == 'popularity':
-        products = products.order_by('-views_count')
-    elif sort == 'date':
-        products = products.order_by('-created_at')
-    elif sort == 'price_low':
-        products = products.order_by('price')
-    elif sort == 'price_high':
-        products = products.order_by('-price')
-    elif sort == 'rating':
-        products = products.order_by('-avg_rating', '-views_count')
+    products = _sort_products(products, sort)
 
     # Pagination
     paginator = Paginator(products, 12)
@@ -126,6 +258,7 @@ def product_list(request):
         'current_sort': sort,
         'total_products': paginator.count,
         'query_string': query_string,
+        **_filter_context(request, brands),
     }
 
     return render(request, 'products/product_list.html', context)
@@ -221,8 +354,8 @@ def product_detail(request, slug):
         'review_form': review_form,
         'related_products': related_products,
         'product_images': product.images.all(),
-        'product_colors': [color for color in product.colors.all() if color.is_available],
-        'product_sizes': [size for size in product.sizes.all() if size.is_available],
+        'product_colors': sorted(product.colors.all(), key=lambda color: not color.is_available),
+        'product_sizes': sorted(product.sizes.all(), key=lambda size: not size.is_available),
         'prev_product': prev_product,
         'next_product': next_product,
         'use_shop_plugins': True,
@@ -241,16 +374,11 @@ def category_products(request, slug):
         is_active=True
     ).for_cards()
 
+    products = _apply_filters(products, request)
+
     # مرتب‌سازی
     sort = request.GET.get('sort', 'popularity')
-    if sort == 'popularity':
-        products = products.order_by('-views_count')
-    elif sort == 'date':
-        products = products.order_by('-created_at')
-    elif sort == 'price_low':
-        products = products.order_by('price')
-    elif sort == 'price_high':
-        products = products.order_by('-price')
+    products = _sort_products(products, sort)
 
     # Pagination
     paginator = Paginator(products, 12)
@@ -276,6 +404,7 @@ def category_products(request, slug):
         'current_sort': sort,
         'total_products': paginator.count,
         'query_string': query_string,
+        **_filter_context(request, brands, category_path=category),
     }
 
     return render(request, 'products/product_list.html', context)
@@ -296,16 +425,11 @@ def search_products(request):
             Q(brand__name__icontains=query)
         ).distinct()
 
+    products = _apply_filters(products, request)
+
     # مرتب‌سازی
     sort = request.GET.get('sort', 'popularity')
-    if sort == 'popularity':
-        products = products.order_by('-views_count')
-    elif sort == 'date':
-        products = products.order_by('-created_at')
-    elif sort == 'price_low':
-        products = products.order_by('price')
-    elif sort == 'price_high':
-        products = products.order_by('-price')
+    products = _sort_products(products, sort)
 
     # Pagination
     paginator = Paginator(products, 12)
@@ -331,6 +455,68 @@ def search_products(request):
         'current_sort': sort,
         'total_products': paginator.count,
         'query_string': query_string,
+        **_filter_context(request, brands),
     }
 
     return render(request, 'products/product_list.html', context)
+
+
+@ratelimit(key='ip', rate='60/m', block=True)
+def suggest_products(request):
+    """پیشنهاد زندهٔ جستجو (محصول + دسته) برای فیلدهای جستجو."""
+    query = ' '.join(request.GET.get('q', '').split())[:60]
+    empty = {'ok': True, 'query': query, 'products': [], 'categories': []}
+    if len(query) < 2:
+        return JsonResponse(empty)
+
+    cache_key = f'suggest_v1_{query.lower()}'
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return JsonResponse({'ok': True, 'query': query, **cached})
+
+    products = Product.objects.filter(is_active=True).filter(
+        Q(name__icontains=query) |
+        Q(brand__name__icontains=query) |
+        Q(category__name__icontains=query)
+    ).for_cards().order_by('-views_count')[:6]
+
+    product_rows = []
+    for product in products:
+        image_url = ''
+        images = list(product.images.all())
+        if images:
+            try:
+                image_url = images[0].image.url
+            except ValueError:
+                image_url = ''
+        product_rows.append({
+            'name': product.name,
+            'url': product.get_absolute_url(),
+            'image': image_url,
+            'price': str(product.price),
+            'price_display': format_toman(product.price),
+            'rating': round(float(product.avg_rating or 0), 1),
+            'review_count': product.review_count,
+            'is_available': bool(product.is_available and product.stock > 0),
+        })
+
+    categories = Category.objects.filter(
+        is_active=True, name__icontains=query
+    ).annotate(
+        product_count=Count('products', filter=Q(products__is_active=True))
+    ).order_by('-product_count')[:4]
+
+    payload = {
+        'products': product_rows,
+        'categories': [
+            {
+                'name': category.name,
+                'url': category.get_absolute_url(),
+                'product_count': category.product_count,
+            }
+            for category in categories
+        ],
+        'search_url': f"{reverse('products:search')}?q={query}",
+    }
+    cache.set(cache_key, payload, 60 * 2)
+    return JsonResponse({'ok': True, 'query': query, **payload})

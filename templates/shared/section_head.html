@@ -1,6 +1,7 @@
 {% comment %}
     Section heading with optional eyebrow, description and a «see all» link.
-    Pass: title, eyebrow, desc, more_url, more_text.
+    Pass: title, eyebrow, desc, more_url, more_text, shelf (adds prev/next
+    controls for horizontal shelves).
 {% endcomment %}
 <div class="ar-section-head">
     <div class="ar-section-head__text">
@@ -8,7 +9,23 @@
         <h2 class="ar-section-title">{{ title }}</h2>
         {% if desc %}<p class="ar-section-desc">{{ desc }}</p>{% endif %}
     </div>
-    {% if more_url %}
+    {% if shelf %}
+    <div class="ar-cluster">
+        <div class="ar-shelf__nav">
+            <button type="button" data-ar-shelf-prev aria-label="محصولات قبلی">
+                <i class="icon-angle-right" aria-hidden="true"></i>
+            </button>
+            <button type="button" data-ar-shelf-next aria-label="محصولات بعدی">
+                <i class="icon-angle-left" aria-hidden="true"></i>
+            </button>
+        </div>
+        {% if more_url %}
+        <a class="ar-link-more" href="{{ more_url }}">
+            {{ more_text|default:"مشاهده همه" }} <i class="icon-long-arrow-left" aria-hidden="true"></i>
+        </a>
+        {% endif %}
+    </div>
+    {% elif more_url %}
     <a class="ar-link-more" href="{{ more_url }}">
         {{ more_text|default:"مشاهده همه" }} <i class="icon-long-arrow-left" aria-hidden="true"></i>
     </a>

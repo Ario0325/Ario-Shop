@@ -214,18 +214,30 @@ class DiscountCodeFlowTests(TestCase):
         response = self.client.get(reverse('cart:detail'))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, reverse('cart:discount_apply'))
         self.assertContains(response, reverse('cart:discount_remove'))
-        self.assertContains(response, 'coupon-active-code')
-        self.assertContains(response, 'summary-discount-amount')
+        self.assertContains(response, 'ar-summary__row--off')
         self.assertContains(response, 'SAVE10')
+        self.assertContains(response, 'ar-ship')
+
+        self._set_cart({self.product.id: 1})
+        plain_response = self.client.get(reverse('cart:detail'))
+        self.assertContains(plain_response, reverse('cart:discount_apply'))
 
     def test_product_detail_renders_discount_interaction_box(self):
         response = self.client.get(reverse('products:detail', kwargs={'slug': self.product.slug}))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'product-discount-input')
+        self.assertContains(response, 'pdp-discount')
         self.assertContains(response, reverse('cart:discount_apply'))
+
+    def _address_payload(self):
+        return {
+            'full_name': 'Test User',
+            'phone': '09120000000',
+            'address': 'Tehran, Test St',
+            'postal_code': '1111111111',
+            'city': 'Tehran',
+        }
 
     def test_checkout_revalidates_discount_and_persists_snapshot(self):
         self._create_profile()
@@ -236,13 +248,14 @@ class DiscountCodeFlowTests(TestCase):
         )
         self._set_cart({self.product.id: 1}, discount_code_value='FIX20')
 
-        response = self.client.post(reverse('cart:checkout'))
+        response = self.client.post(reverse('cart:checkout'), self._address_payload())
 
         self.assertEqual(response.status_code, 302)
         order = Order.objects.get()
         self.assertEqual(order.subtotal, Decimal('100000'))
         self.assertEqual(order.discount_amount, Decimal('20000'))
-        self.assertEqual(order.total, Decimal('80000'))
+        self.assertEqual(order.shipping_cost, Decimal('49000'))
+        self.assertEqual(order.total, Decimal('129000'))
         self.assertEqual(order.discount_code_id, code.id)
 
         code.refresh_from_db()
@@ -253,14 +266,10 @@ class DiscountCodeFlowTests(TestCase):
 
         payment_response = self.client.get(reverse('cart:payment', kwargs={'order_id': order.id}))
         self.assertEqual(payment_response.status_code, 200)
-        self.assertContains(payment_response, 'payment-discount-chip')
-        self.assertContains(payment_response, 'payment-discount-row')
         self.assertContains(payment_response, 'FIX20')
 
         invoice_response = self.client.get(reverse('cart:invoice', kwargs={'order_id': order.id}))
         self.assertEqual(invoice_response.status_code, 200)
-        self.assertContains(invoice_response, 'invoice-discount-code-row')
-        self.assertContains(invoice_response, 'invoice-discount-row')
         self.assertContains(invoice_response, 'FIX20')
 
     def test_checkout_drops_invalid_discount_before_order_snapshot(self):
@@ -271,14 +280,15 @@ class DiscountCodeFlowTests(TestCase):
         )
         self._set_cart({self.product.id: 1}, discount_code_value='MIN200')
 
-        response = self.client.post(reverse('cart:checkout'))
+        response = self.client.post(reverse('cart:checkout'), self._address_payload())
 
         self.assertEqual(response.status_code, 302)
         order = Order.objects.get()
         self.assertEqual(order.subtotal, Decimal('100000'))
         self.assertEqual(order.discount_amount, Decimal('0'))
         self.assertIsNone(order.discount_code)
-        self.assertEqual(order.total, Decimal('100000'))
+        self.assertEqual(order.shipping_cost, Decimal('49000'))
+        self.assertEqual(order.total, Decimal('149000'))
 
         code.refresh_from_db()
         self.assertEqual(code.used_count, 0)

@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.core.cache import cache
 from django.db import models
-from django.db.models import Avg, Prefetch, Q
+from django.db.models import Avg, Count, Prefetch, Q
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 from django.urls import reverse
@@ -98,7 +98,8 @@ class ProductQuerySet(models.QuerySet):
             Prefetch('images', queryset=ProductImage.objects.order_by('order', 'created_at')),
             'colors',
         ).annotate(
-            avg_rating=Avg('reviews__rating', filter=Q(reviews__is_approved=True))
+            avg_rating=Avg('reviews__rating', filter=Q(reviews__is_approved=True)),
+            review_count=Count('reviews', filter=Q(reviews__is_approved=True), distinct=True),
         )
 
 

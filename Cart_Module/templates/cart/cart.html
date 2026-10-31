@@ -124,6 +124,8 @@
                 </div>
                 {% endif %}
 
+                {% include 'shared/shipping_progress.html' %}
+
                 <div class="ar-summary__row">
                     <span>هزینه ارسال</span>
                     <b>{% if shipping_cost %}{{ shipping_cost|toman }}{% else %}رایگان{% endif %}</b>
@@ -134,13 +136,28 @@
                     <b>{{ total_payable|toman }}</b>
                 </div>
 
+                {% if user.is_authenticated %}
                 <form method="post" action="{% url 'cart:checkout' %}" data-ar-lock class="ar-summary__cta">
                     {% csrf_token %}
-                    <button type="submit" class="ar-btn ar-btn--gold ar-btn--block ar-btn--lg">
+                    {% include 'cart/_address_form.html' %}
+                    <button type="submit" class="ar-btn ar-btn--gold ar-btn--block ar-btn--lg mt-3">
                         <i class="icon-credit-card" aria-hidden="true"></i>
                         ادامه و پرداخت
                     </button>
                 </form>
+                {% else %}
+                <div class="ar-summary__cta">
+                    <div class="ar-note mb-3">
+                        <i class="icon-user" aria-hidden="true"></i>
+                        <span>برای تکمیل خرید وارد شوید؛ اقلام سبد شما حفظ می‌شود.</span>
+                    </div>
+                    <a class="ar-btn ar-btn--gold ar-btn--block ar-btn--lg"
+                       href="{% url 'accounts:login_register' %}?next={{ request.path|urlencode }}">
+                        <i class="icon-user" aria-hidden="true"></i>
+                        ورود و ادامه خرید
+                    </a>
+                </div>
+                {% endif %}
 
                 <p class="ar-summary__hint">
                     <i class="icon-shield" aria-hidden="true"></i>

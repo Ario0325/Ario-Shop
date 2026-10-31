@@ -6,13 +6,14 @@ from decimal import Decimal
 from urllib.parse import quote
 
 import jdatetime
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.db import transaction
-from django.db.models import Prefetch
-from django.http import JsonResponse
+from django.db.models import F, Prefetch
+from django.http import JsonResponse, Http404
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
@@ -22,19 +23,56 @@ from django.views.decorators.http import require_POST, require_http_methods
 from django_ratelimit.decorators import ratelimit
 
 from Products_Module.models import Product, ProductImage
-from .models import Order, OrderItem, CartItem
+from .models import Order, OrderItem, CartItem, DiscountCode
 from .services import (
     sync_cart_to_db,
     load_cart_from_db,
+    cart_cache_key,
     CART_SESSION_KEY,
     DISCOUNT_SESSION_KEY,
     get_active_discount_code,
     validate_discount_code,
     apply_discount_to_session,
     remove_discount_from_session,
-    calculate_cart_with_discount,
+    build_cart_totals,
     N8nOrderService,
 )
+from .forms import CheckoutAddressForm
+from Core_Module.templatetags.number_tags import toman as format_toman
+
+
+def _is_ajax(request):
+    return request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+
+def _cart_payload(cart_items, totals):
+    """JSON مشترک پاسخ‌های سبد (افزودن/حذف)."""
+    return {
+        'ok': True,
+        'cart': {
+            'count': sum(item['quantity'] for item in cart_items),
+            'total': int(totals['subtotal']),
+            'total_display': format_toman(totals['subtotal']),
+            'discount': int(totals['discount_amount']),
+            'goods_net': int(totals['goods_net']),
+            'shipping_cost': int(totals['shipping_cost']),
+            'shipping_display': (
+                'رایگان' if totals['shipping_cost'] == 0 else format_toman(totals['shipping_cost'])
+            ),
+            'total_payable': int(totals['total_payable']),
+            'total_payable_display': format_toman(totals['total_payable']),
+            'free_shipping_remaining': int(totals['free_shipping_remaining']),
+            'free_shipping_remaining_display': format_toman(totals['free_shipping_remaining']),
+            'free_shipping_percent': totals['free_shipping_percent'],
+            'is_free_shipping': totals['is_free_shipping'],
+        },
+    }
+
+
+def _totals_for_request(request):
+    items, _ = _cart_item_list(request)
+    totals = build_cart_totals(items, get_active_discount_code(request))
+    return items, totals
 
 
 def _get_cart(request):
@@ -52,10 +90,9 @@ def _get_cart(request):
 
 def _clear_cart_cache(request):
     """پاک کردن کش سبد خرید - هنگام تغییر سبد فراخوانی شود"""
-    if request.user.is_authenticated:
-        cache.delete(f'cart_context_user_{request.user.id}')
-    elif request.session.session_key:
-        cache.delete(f'cart_context_session_{request.session.session_key}')
+    key = cart_cache_key(request)
+    if key:
+        cache.delete(key)
 
 
 def _read_cart(request):
@@ -105,31 +142,44 @@ def _cart_item_list(request):
     return items, total
 
 
+def _cart_page_context(request):
+    """Context مشترک صفحهٔ سبد (برای نمایش اولیه و خطاهای فرم آدرس)."""
+    items, _ = _cart_item_list(request)
+    if not items:
+        return None
+
+    discount_code = get_active_discount_code(request)
+    totals = build_cart_totals(items, discount_code)
+
+    profile = None
+    if request.user.is_authenticated:
+        from Accounts_Module.models import UserProfile
+        profile = UserProfile.objects.filter(user=request.user).first()
+
+    return {
+        'cart_items': items,
+        'cart_total': totals['subtotal'],
+        'shipping_cost': totals['shipping_cost'],
+        'discount_code': discount_code,
+        'discount_amount': totals['discount_amount'],
+        'discounted_product_id': totals['discounted_product_id'],
+        'total_payable': totals['total_payable'],
+        'free_shipping_remaining': totals['free_shipping_remaining'],
+        'free_shipping_percent': totals['free_shipping_percent'],
+        'free_shipping_threshold': totals['free_shipping_threshold'],
+        'is_free_shipping': totals['is_free_shipping'],
+        'profile': profile,
+    }
+
+
 @never_cache
 def cart_detail(request):
     """صفحه سبد خرید - جدول محصولات + جمع سبد (طبق قالب cart.html)"""
-    items, cart_total = _cart_item_list(request)
-    if not items:
+    context = _cart_page_context(request)
+    if context is None:
         return redirect('cart:empty')
-
-    # هزینه ارسال ساده: رایگان یا ثابت (می‌توان بعداً از تنظیمات خواند)
-    shipping_cost = Decimal('0')
-
-    # کد تخفیف فعال
-    discount_code = get_active_discount_code(request)
-    discount_info = calculate_cart_with_discount(items, discount_code)
-
-    total_payable = discount_info['total_payable'] + shipping_cost
-
-    context = {
-        'cart_items': items,
-        'cart_total': discount_info['subtotal'],
-        'shipping_cost': shipping_cost,
-        'discount_code': discount_code,
-        'discount_amount': discount_info['discount_amount'],
-        'discounted_product_id': discount_info['discounted_product_id'],
-        'total_payable': total_payable,
-    }
+    if 'address_form' not in context:
+        context['address_form'] = CheckoutAddressForm(profile=context['profile'])
     return render(request, 'cart/cart.html', context)
 
 
@@ -140,17 +190,24 @@ def cart_empty(request):
 
 
 @require_POST
+@ratelimit(key='ip', rate='40/m', block=True)
 def cart_add(request, product_id):
-    """افزودن به سبد - POST از صفحه محصول"""
-    if not request.user.is_authenticated:
-        messages.info(request, 'برای افزودن به سبد خرید ابتدا وارد شوید.')
-        target = request.POST.get('next') or request.GET.get('next') or reverse('products:list')
-        if not url_has_allowed_host_and_scheme(target, allowed_hosts={request.get_host()}):
-            target = reverse('products:list')
-        return redirect(reverse('accounts:login_register') + '?next=' + quote(target, safe=''))
-
-    product = get_object_or_404(Product, pk=product_id, is_active=True)
+    """افزودن به سبد - برای مهمان و کاربر واردشده، با پاسخ JSON برای AJAX."""
+    ajax = _is_ajax(request)
+    product = Product.objects.filter(pk=product_id, is_active=True).first()
+    if product is None:
+        if ajax:
+            return JsonResponse(
+                {'ok': False, 'code': 'not_found', 'message': 'محصول مورد نظر یافت نشد.'},
+                status=404,
+            )
+        raise Http404('محصول مورد نظر یافت نشد.')
     if not product.is_available or product.stock < 1:
+        if ajax:
+            return JsonResponse(
+                {'ok': False, 'code': 'out_of_stock', 'message': 'این محصول در حال حاضر موجود نیست.'},
+                status=409,
+            )
         messages.error(request, 'این محصول در حال حاضر موجود نیست.')
         return redirect(product.get_absolute_url())
 
@@ -161,24 +218,47 @@ def cart_add(request, product_id):
     except (ValueError, TypeError):
         qty = 1
 
-    # Check if adding this quantity would exceed available stock
     pid = str(product.id)
     current_qty = cart.get(pid, 0)
+    notice = None
     if current_qty + qty > product.stock:
         available = product.stock - current_qty
         if available <= 0:
-            messages.error(request, f'«{product.name}» به مقدار درخواستی در انبار موجود نیست.')
+            message = f'«{product.name}» به مقدار درخواستی در انبار موجود نیست.'
+            if ajax:
+                items, totals = _totals_for_request(request)
+                payload = _cart_payload(items, totals)
+                payload.update({'ok': False, 'code': 'capped', 'message': message})
+                return JsonResponse(payload, status=409)
+            messages.error(request, message)
             return redirect(product.get_absolute_url())
-        else:
-            qty = available
-            messages.warning(request, f'حداکثر {available} عدد از «{product.name}» قابل افزودن به سبد است.')
+        qty = available
+        notice = {
+            'level': 'warning',
+            'text': f'حداکثر {available} عدد از «{product.name}» قابل افزودن به سبد است.',
+        }
 
     cart[pid] = current_qty + qty
     request.session.modified = True
     sync_cart_to_db(request)
-    _clear_cart_cache(request)  # پاک کردن کش سبد
+    _clear_cart_cache(request)
 
-    messages.success(request, f'«{product.name}» به سبد خرید اضافه شد.')
+    success_text = f'«{product.name}» به سبد خرید اضافه شد.'
+    if ajax:
+        items, totals = _totals_for_request(request)
+        payload = _cart_payload(items, totals)
+        payload['added'] = {
+            'id': product.pk,
+            'name': product.name,
+            'quantity': qty,
+            'line_quantity': cart[pid],
+        }
+        payload['notice'] = notice or {'level': 'success', 'text': success_text}
+        return JsonResponse(payload)
+
+    if notice:
+        messages.warning(request, notice['text'])
+    messages.success(request, success_text)
     next_url = request.POST.get('next') or request.GET.get('next')
     if next_url and not url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
         next_url = None
@@ -186,21 +266,27 @@ def cart_add(request, product_id):
 
 
 @require_POST
+@ratelimit(key='ip', rate='40/m', block=True)
 def cart_remove(request, product_id):
-    """حذف یک محصول از سبد"""
-    if not request.user.is_authenticated:
-        messages.info(request, 'برای مدیریت سبد خرید ابتدا وارد شوید.')
-        return redirect(reverse('accounts:login_register') + '?next=' + request.path)
-
+    """حذف یک محصول از سبد - برای مهمان و کاربر واردشده."""
     cart = _get_cart(request)
     pid = str(product_id)
+    removed = False
     if pid in cart:
         del cart[pid]
         request.session.modified = True
         sync_cart_to_db(request)
-        _clear_cart_cache(request)  # پاک کردن کش سبد
-        messages.info(request, 'محصول از سبد خرید حذف شد.')
+        _clear_cart_cache(request)
+        removed = True
 
+    if _is_ajax(request):
+        items, totals = _totals_for_request(request)
+        payload = _cart_payload(items, totals)
+        payload['removed'] = removed
+        return JsonResponse(payload)
+
+    if removed:
+        messages.info(request, 'محصول از سبد خرید حذف شد.')
     next_url = request.POST.get('next') or request.GET.get('next')
     if next_url and not url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
         next_url = None
@@ -210,10 +296,6 @@ def cart_remove(request, product_id):
 @require_POST
 def cart_update(request):
     """به‌روزرسانی تعداد چند آیتم - از جدول سبد (نام اینپوت: qty_{product_id})"""
-    if not request.user.is_authenticated:
-        messages.info(request, 'برای مدیریت سبد خرید ابتدا وارد شوید.')
-        return redirect(reverse('accounts:login_register') + '?next=' + request.path)
-
     cart = _get_cart(request)
     for key, value in request.POST.items():
         if key.startswith('qty_'):
@@ -238,24 +320,24 @@ def cart_update(request):
 
 def cart_context(request):
     """برای استفاده در هدر: تعداد آیتم، جمع کل و چند آیتم اول برای دراپ‌داون - با کشینگ"""
-    # کش مخصوص هر کاربر؛ برای مهمان بدون session کلید ساخته نمی‌شود
-    if request.user.is_authenticated:
-        cache_key = f'cart_context_user_{request.user.id}'
-    elif request.session.session_key:
-        cache_key = f'cart_context_session_{request.session.session_key}'
-    else:
-        cache_key = None
+    cache_key = cart_cache_key(request)
 
     if cache_key:
         cached_context = cache.get(cache_key)
         if cached_context is not None:
             return cached_context
 
-    items, total = _cart_item_list(request)
+    items, totals = _totals_for_request(request)
     context = {
         'cart_count': sum(i['quantity'] for i in items),
-        'cart_total': total,
-        'cart_items_preview': items[:3],  # حداکثر ۳ آیتم برای دراپ‌داون هدر
+        'cart_total': totals['subtotal'],
+        'cart_items_preview': items,  # همهٔ اقلام برای دراور سبد
+        'cart_shipping_cost': totals['shipping_cost'],
+        'cart_total_payable': totals['total_payable'],
+        'free_shipping_remaining': totals['free_shipping_remaining'],
+        'free_shipping_percent': totals['free_shipping_percent'],
+        'free_shipping_threshold': totals['free_shipping_threshold'],
+        'is_free_shipping': totals['is_free_shipping'],
     }
 
     if cache_key:
@@ -264,11 +346,26 @@ def cart_context(request):
     return context
 
 
+@never_cache
+def cart_drawer(request):
+    """HTML تازهٔ دراور سبد برای به‌روزرسانی بدون رفرش."""
+    items, totals = _totals_for_request(request)
+    return render(request, 'cart/_drawer.html', {
+        'cart_count': sum(i['quantity'] for i in items),
+        'cart_items_preview': items,
+        'cart_total': totals['subtotal'],
+        'cart_shipping_cost': totals['shipping_cost'],
+        'cart_total_payable': totals['total_payable'],
+        'free_shipping_remaining': totals['free_shipping_remaining'],
+        'free_shipping_percent': totals['free_shipping_percent'],
+        'free_shipping_threshold': totals['free_shipping_threshold'],
+        'is_free_shipping': totals['is_free_shipping'],
+    })
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # ویوهای کد تخفیف
-# ─────────────────────────────────────────────────────────────────────────────
-
-@require_POST
+# ─────────────────────────────────────────────────────────────────────────────@require_POST
 @ratelimit(key='user', rate='10/m', block=True)
 def discount_apply(request):
     """اعمال کد تخفیف روی سبد خرید - با Rate Limiting برای جلوگیری از سوء استفاده"""
@@ -293,7 +390,8 @@ def discount_apply(request):
         return redirect('cart:detail')
 
     apply_discount_to_session(request, discount_code.code)
-    discount_info = calculate_cart_with_discount(items, discount_code)
+    _clear_cart_cache(request)
+    discount_info = build_cart_totals(items, discount_code)
     discount_amount = discount_info['discount_amount']
 
     if discount_code.scope == 'product' and discount_code.product:
@@ -316,6 +414,7 @@ def discount_apply(request):
 def discount_remove(request):
     """حذف کد تخفیف از سبد خرید"""
     remove_discount_from_session(request)
+    _clear_cart_cache(request)
     messages.info(request, 'کد تخفیف حذف شد.')
     return redirect('cart:detail')
 
@@ -324,74 +423,97 @@ def discount_remove(request):
 # ویوهای سفارش و پرداخت
 # ─────────────────────────────────────────────────────────────────────────────
 
-@login_required
-@require_POST
+@require_http_methods(['GET', 'POST'])
 @ratelimit(key='user', rate='5/m', block=True)
 def checkout_view(request):
     """ثبت سفارش از سبد و هدایت به صفحه پرداخت (ساده - بدون درگاه) - با Rate Limiting"""
 
-    items, cart_total = _cart_item_list(request)
+    if not request.user.is_authenticated:
+        messages.info(request, 'برای تکمیل خرید ابتدا وارد شوید؛ سبد شما حفظ می‌شود.')
+        target = reverse('cart:detail')
+        return redirect(reverse('accounts:login_register') + '?next=' + quote(target, safe=''))
+
+    if request.method != 'POST':
+        return redirect('cart:detail')
+
+    items, _ = _cart_item_list(request)
     if not items:
         messages.warning(request, 'سبد خرید شما خالی است.')
         return redirect('cart:empty')
 
-    # اگر کاربر لاگین است از پروفایل پر کنیم
-    full_name = ''
-    phone = ''
-    email = ''
-    address = ''
-    postal_code = ''
-    city = ''
-    if request.user.is_authenticated:
-        try:
-            from Accounts_Module.models import UserProfile
-            profile = UserProfile.objects.get(user=request.user)
-            full_name = profile.full_name or ''
-            phone = profile.phone or ''
-            address = profile.address or ''
-            postal_code = profile.postal_code or ''
-            city = profile.city or ''
-            email = request.user.email or ''
-        except Exception:
-            pass
+    form = CheckoutAddressForm(request.POST or None)
+    if not form.is_valid():
+        context = _cart_page_context(request)
+        if context is None:
+            return redirect('cart:empty')
+        context['address_form'] = form
+        messages.error(request, 'لطفاً اطلاعات ارسال را کامل و صحیح وارد کنید.')
+        return render(request, 'cart/cart.html', context)
 
-    if not full_name or not phone or not address:
-        messages.info(request, 'لطفاً در داشبورد نام، تلفن و آدرس را تکمیل کنید سپس به پرداخت برگردید.')
-        return redirect('accounts:dashboard')
+    for item in items:
+        if item['product'].stock < item['quantity']:
+            messages.error(
+                request,
+                f'موجودی «{item["product"].name}» به {item["product"].stock} عدد کاهش یافته است. '
+                'لطفاً تعداد را به‌روزرسانی کنید.',
+            )
+            return redirect('cart:detail')
+
+    data = form.cleaned_data
+    from Accounts_Module.models import UserProfile
+    UserProfile.objects.update_or_create(
+        user=request.user,
+        defaults={
+            'full_name': data['full_name'],
+            'phone': data['phone'],
+            'city': data['city'],
+            'address': data['address'],
+            'postal_code': data.get('postal_code', ''),
+        },
+    )
 
     # ── اعتبارسنجی مجدد کد تخفیف در زمان checkout ────────────────────────────
     discount_code_obj = None
-    discount_amount = Decimal('0')
-    subtotal = sum(item['total'] for item in items)
-
     code_str = request.session.get(DISCOUNT_SESSION_KEY)
     if code_str:
         validated_code, error = validate_discount_code(code_str, items, request.user, request)
         if validated_code:
             discount_code_obj = validated_code
-            discount_info = calculate_cart_with_discount(items, validated_code)
-            discount_amount = discount_info['discount_amount']
         else:
-            # کد دیگر معتبر نیست - از سشن پاک کن و به کاربر اطلاع بده
             remove_discount_from_session(request)
             messages.warning(request, f'کد تخفیف «{code_str}» دیگر معتبر نیست و از سبد حذف شد.')
 
-    final_total = max(subtotal - discount_amount, Decimal('0'))
+    totals = build_cart_totals(items, discount_code_obj)
+
+    # کد تخفیف نباید کل مبلغ کالاها را صفر کند (جلوگیری از سفارش رایگان).
+    if discount_code_obj and totals['discount_amount'] >= totals['subtotal']:
+        remove_discount_from_session(request)
+        discount_code_obj = None
+        totals = build_cart_totals(items, None)
+        messages.warning(request, 'این کد تخفیف کل مبلغ کالاها را پوشش می‌دهد و مجاز نیست؛ از سبد حذف شد.')
 
     with transaction.atomic():
+        # قفل ردیف کد تخفیف تا چند سفارش هم‌زمان سقف استفاده را رد نکنند.
+        if discount_code_obj:
+            locked_code = DiscountCode.objects.select_for_update().get(pk=discount_code_obj.pk)
+            if not locked_code.has_usage_remaining() or not locked_code.user_can_use(request.user):
+                discount_code_obj = None
+                totals = build_cart_totals(items, None)
+                messages.warning(request, 'ظرفیت استفاده از این کد تخفیف تکمیل شده و از سفارش حذف شد.')
+
         order = Order(
-            user=request.user if request.user.is_authenticated else None,
-            full_name=full_name,
-            phone=phone,
-            email=email,
-            address=address,
-            postal_code=postal_code,
-            city=city,
-            subtotal=subtotal,
+            user=request.user,
+            full_name=data['full_name'],
+            phone=data['phone'],
+            email=request.user.email or '',
+            address=data['address'],
+            postal_code=data.get('postal_code', ''),
+            city=data['city'],
+            subtotal=totals['subtotal'],
             discount_code=discount_code_obj,
-            discount_amount=discount_amount,
-            total=final_total,
-            shipping_cost=Decimal('0'),
+            discount_amount=totals['discount_amount'],
+            total=totals['total_payable'],
+            shipping_cost=totals['shipping_cost'],
             tax=Decimal('0'),
             status='pending',
         )
@@ -407,10 +529,8 @@ def checkout_view(request):
                 total=item['total'],
             )
 
-        # افزایش شمارنده استفاده از کد تخفیف
+        # افزایش شمارنده استفاده از کد تخفیف در همان تراکنش سفارش
         if discount_code_obj:
-            from django.db.models import F
-            from .models import DiscountCode
             DiscountCode.objects.filter(pk=discount_code_obj.pk).update(used_count=F('used_count') + 1)
 
     # خالی کردن سبد و کد تخفیف
@@ -418,6 +538,7 @@ def checkout_view(request):
     remove_discount_from_session(request)
     request.session.modified = True
     CartItem.objects.filter(user=request.user).delete()
+    _clear_cart_cache(request)
 
     messages.success(request, 'سفارش با موفقیت ثبت شد. لطفاً پرداخت را انجام دهید.')
     return redirect('cart:payment', order_id=order.id)
@@ -430,12 +551,16 @@ class _InsufficientStockError(Exception):
 @never_cache
 @ratelimit(key='user', rate='10/m', block=True)
 def payment_view(request, order_id):
-    """نمایش صفحه پرداخت (شبیه‌سازی درگاه پرداخت) - با Rate Limiting"""
+    """نمایش صفحه پرداخت.
+
+    پرداخت شبیه‌سازی‌شده فقط برای staff یا در حالت DEBUG مجاز است تا کاربران
+    عادی بدون درگاه واقعی سفارش را «پرداخت‌شده» نکنند.
+    """
     # Require login to view payment page
     if not request.user.is_authenticated:
         from django.urls import reverse
         return redirect(reverse('accounts:login_register') + '?next=' + reverse('cart:payment', args=[order_id]))
-    
+
     order = get_object_or_404(
         Order.objects.prefetch_related('items__product'),
         pk=order_id
@@ -445,39 +570,78 @@ def payment_view(request, order_id):
         from django.http import HttpResponseForbidden
         return HttpResponseForbidden('دسترسی مجاز نیست.')
 
+    simulated_payment_enabled = bool(settings.DEBUG or request.user.is_staff)
+
+    # سفارش پرداخت‌شده دوباره پردازش نمی‌شود (idempotent).
+    if order.status == 'paid':
+        messages.info(request, 'این سفارش قبلاً پرداخت شده است.')
+        return redirect('cart:invoice', order_id=order.id)
+
     if request.method == 'POST':
-        # Reduce product stock
+        if not simulated_payment_enabled:
+            messages.warning(
+                request,
+                'درگاه پرداخت آنلاین هنوز فعال نشده است؛ سفارش شما ثبت شد و '
+                'برای هماهنگی پرداخت با پشتیبانی تماس بگیرید.',
+            )
+            return redirect('cart:detail')
+
+        paid_now = False
         try:
             with transaction.atomic():
-                for item in order.items.all():
-                    product = Product.objects.select_for_update().get(pk=item.product_id)
-                    if product.stock < item.quantity:
-                        raise _InsufficientStockError(product.name)
-                    product.stock -= item.quantity
-                    if product.stock <= 0:
-                        product.is_available = False
-                    product.save(update_fields=['stock', 'is_available'])
+                # قفل سفارش تا دو درخواست هم‌زمان موجودی را دوبار کم نکنند.
+                locked_order = Order.objects.select_for_update().get(
+                    pk=order.pk, user=request.user
+                )
+                if locked_order.status == 'paid':
+                    # درخواست تکراری؛ هیچ تغییری اعمال نمی‌شود.
+                    locked_order = None
+                elif locked_order.status != 'pending':
+                    messages.error(request, 'این سفارش در وضعیت فعلی قابل پرداخت نیست.')
+                    return redirect('cart:detail')
+                else:
+                    for item in locked_order.items.all():
+                        product = Product.objects.select_for_update().get(pk=item.product_id)
+                        if product.stock < item.quantity:
+                            raise _InsufficientStockError(product.name)
+                        product.stock -= item.quantity
+                        if product.stock <= 0:
+                            product.is_available = False
+                        product.save(update_fields=['stock', 'is_available'])
 
-                order.status = 'paid'
-                order.save(update_fields=['status', 'updated_at'])
+                    locked_order.status = 'paid'
+                    locked_order.save(update_fields=['status', 'updated_at'])
+                    paid_now = True
         except _InsufficientStockError as exc:
             messages.error(request, f'موجودی کافی از «{exc}» وجود ندارد.')
             return redirect('cart:payment', order_id=order.id)
+        except Order.DoesNotExist:
+            messages.error(request, 'سفارش یافت نشد.')
+            return redirect('cart:detail')
         except Exception:
             logger.exception('payment processing failed for order %s', order.pk)
             messages.error(request, 'خطا در پردازش سفارش. لطفاً دوباره تلاش کنید.')
             return redirect('cart:payment', order_id=order.id)
 
-        # وبهوک‌ها بعد از commit و بدون تاثیر روی نتیجه پرداخت
+        if not paid_now:
+            messages.info(request, 'این سفارش قبلاً پرداخت شده است.')
+            return redirect('cart:invoice', order_id=order.id)
+
+        # وبهوک‌ها فقط یک بار و بعد از commit، بدون تاثیر روی نتیجه پرداخت
+        order.refresh_from_db()
         N8nOrderService.send_order_confirmation(order)
         N8nOrderService.send_telegram_notification(order)
 
         messages.success(request, 'پرداخت با موفقیت انجام شد. فاکتور شما آماده است.')
         return redirect('cart:invoice', order_id=order.id)
 
-    return render(request, 'cart/payment.html', {'order': order})
+    return render(request, 'cart/payment.html', {
+        'order': order,
+        'simulated_payment_enabled': simulated_payment_enabled,
+    })
 
 
+@never_cache
 def invoice_view(request, order_id):
     """نمایش فاکتور سفارش (فقط سفارش خود کاربر)"""
     # Require login to view invoice

@@ -149,7 +149,7 @@
                 {% elif product.is_available %}
                 <span class="ar-price-lg__now">{{ product.price|toman }}</span>
                 {% else %}
-                <span class="ar-price-lg__now" style="color:var(--faint)">{{ product.price|toman }}</span>
+                <span class="ar-price-lg__now is-muted">{{ product.price|toman }}</span>
                 <span class="ar-price-lg__off">برای اطلاع از موجودی تماس بگیرید</span>
                 {% endif %}
             </div>
@@ -166,11 +166,11 @@
                 </span>
                 <div class="ar-swatches">
                     {% for color in product_colors %}
-                    <label class="ar-swatch{% if forloop.first %} is-active{% endif %}"
-                           style="--sw: {{ color.code }};" title="{{ color.name }}">
+                    <label class="ar-swatch{% if forloop.first and color.is_available %} is-active{% endif %}{% if not color.is_available %} is-out{% endif %}"
+                           style="--sw: {{ color.code }};" title="{{ color.name }}{% if not color.is_available %} (ناموجود){% endif %}">
                         <input type="radio" name="color" value="{{ color.name }}" data-label="{{ color.name }}"
-                               {% if forloop.first %}checked{% endif %}>
-                        <span class="ar-sr-only">رنگ {{ color.name }}</span>
+                               {% if not color.is_available %}disabled{% elif forloop.first %}checked{% endif %}>
+                        <span class="ar-sr-only">رنگ {{ color.name }}{% if not color.is_available %}، ناموجود{% endif %}</span>
                     </label>
                     {% endfor %}
                 </div>
@@ -185,9 +185,10 @@
                 </span>
                 <div class="ar-sizes">
                     {% for size in product_sizes %}
-                    <label class="ar-size{% if forloop.first %} is-active{% endif %}">
+                    <label class="ar-size{% if forloop.first and size.is_available %} is-active{% endif %}{% if not size.is_available %} is-out{% endif %}">
                         <input type="radio" name="size" value="{{ size.get_size_display }}"
-                               data-label="{{ size.get_size_display }}" {% if forloop.first %}checked{% endif %}>
+                               data-label="{{ size.get_size_display }}"
+                               {% if not size.is_available %}disabled{% elif forloop.first %}checked{% endif %}>
                         <span>{{ size.get_size_display }}</span>
                     </label>
                     {% endfor %}
@@ -196,7 +197,7 @@
             {% endif %}
 
             {% if product.is_available and product.stock > 0 %}
-            <form id="ar-product-form" action="{% url 'cart:add' product.id %}" method="post">
+            <form id="ar-product-form" action="{% url 'cart:add' product.id %}" method="post" data-ar-cart-add>
                 {% csrf_token %}
                 <input type="hidden" name="next" value="{{ request.path }}">
                 <div class="ar-buyrow">
@@ -212,7 +213,8 @@
                             <i class="icon-plus" aria-hidden="true"></i>
                         </button>
                     </div>
-                    <button type="submit" class="ar-btn ar-btn--primary" data-ar-submit>
+                    <button type="submit" class="ar-btn ar-btn--primary" data-ar-submit data-ar-add-btn
+                            data-ar-add-label="افزودن به سبد خرید">
                         <i class="icon-shopping-cart" aria-hidden="true"></i>
                         افزودن به سبد خرید
                     </button>

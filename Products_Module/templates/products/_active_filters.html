@@ -1,0 +1,14 @@
+{% load number_tags %}
+{% if active_filters %}
+<div class="ar-activefilters" aria-label="فیلترهای فعال">
+    <span class="ar-activefilters__label">فیلترهای فعال ({{ applied_count|ar_digits }})</span>
+    {% for filter in active_filters %}
+    <a class="ar-chip is-active" href="{{ filter.url }}">
+        {{ filter.label }}
+        <i class="icon-times ar-chip__x" aria-hidden="true"></i>
+        <span class="ar-sr-only">حذف فیلتر {{ filter.label }}</span>
+    </a>
+    {% endfor %}
+    <a class="ar-activefilters__clear" href="{{ filter_clear_url }}">پاک کردن همه</a>
+</div>
+{% endif %}

@@ -1,0 +1,93 @@
+{% load static %}<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex">
+    <title>صفحه پیدا نشد | آریو شاپ</title>
+    <style>
+        :root {
+            --ink: #24101B;
+            --muted: #75636C;
+            --brand: #6B2D46;
+            --accent: #D99A6C;
+            --sand: #F5ECE3;
+            --surface: #FDFAF6;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100dvh;
+            display: grid;
+            place-items: center;
+            padding: 24px;
+            font-family: "Vazir", "Segoe UI", Tahoma, sans-serif;
+            color: var(--ink);
+            background:
+                radial-gradient(48rem 32rem at 50% 0%, rgba(217, 154, 108, .18), transparent 60%),
+                var(--sand);
+        }
+        .card {
+            width: min(520px, 100%);
+            text-align: center;
+            padding: clamp(28px, 6vw, 48px);
+            border-radius: 28px;
+            background: var(--surface);
+            border: 1px solid rgba(36, 16, 24, .08);
+            box-shadow: 0 24px 60px rgba(36, 16, 24, .12);
+        }
+        .mark {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 20px;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            background: var(--ink);
+            color: var(--accent);
+            font-weight: 800;
+            font-size: 26px;
+            letter-spacing: .04em;
+        }
+        .code {
+            font-size: clamp(3rem, 12vw, 4.5rem);
+            font-weight: 800;
+            line-height: 1;
+            letter-spacing: -.04em;
+            color: var(--brand);
+            margin: 0;
+        }
+        h1 { margin: 12px 0 10px; font-size: 1.25rem; }
+        p { margin: 0 auto 26px; max-width: 34ch; color: var(--muted); line-height: 1.9; font-size: .95rem; }
+        .actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+        a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 46px;
+            padding: 0 22px;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: .9rem;
+            text-decoration: none;
+            transition: background-color .2s ease, color .2s ease;
+        }
+        .primary { background: var(--ink); color: #FBF4EF; }
+        .primary:hover { background: var(--brand); }
+        .ghost { border: 1px solid rgba(36, 16, 24, .18); color: var(--ink); }
+        .ghost:hover { background: var(--sand); }
+    </style>
+</head>
+<body>
+    <main class="card">
+        <div class="mark" aria-hidden="true">A</div>
+        <p class="code" aria-hidden="true">۴۰۴</p>
+        <h1>این صفحه از قفسه‌ها افتاده است</h1>
+        <p>نشانی‌ای که دنبالش بودید پیدا نشد؛ شاید محصول حذف شده یا لینک قدیمی است. از فروشگاه ادامه دهید.</p>
+        <div class="actions">
+            <a class="primary" href="/">بازگشت به خانه</a>
+            <a class="ghost" href="/shop/">دیدن فروشگاه</a>
+        </div>
+    </main>
+</body>
+</html>

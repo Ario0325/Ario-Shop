@@ -13,6 +13,7 @@
 {% endblock %}
 
 {% block content %}
+{% url 'products:list' as shop_url %}
 
 <!-- ══ هیرو بنتو ══════════════════════════════════════════════════════════ -->
 <section class="ar-container">
@@ -100,7 +101,6 @@
 
 <!-- ══ دسته‌بندی‌ها ════════════════════════════════════════════════════════ -->
 {% if main_categories %}
-{% url 'products:list' as shop_url %}
 <section class="ar-container ar-section--tight">
     {% include 'shared/section_head.html' with title="از کجا شروع کنیم؟" eyebrow="دسته‌بندی‌ها" desc="مسیر خریدتان را بر اساس سلیقه‌تان انتخاب کنید." more_url=shop_url more_text="همه محصولات" %}
     <div class="ar-cats">
@@ -128,26 +128,7 @@
 <section class="ar-container ar-section--tight">
     {% if new_products %}
     <div class="ar-shelf" data-ar-shelf-root>
-        <div class="ar-section-head">
-            <div class="ar-section-head__text">
-                <span class="ar-eyebrow">تازه رسیده</span>
-                <h2 class="ar-section-title">جدیدترین محصولات</h2>
-                <p class="ar-section-desc">اولین نفر باشید که تازه‌های این هفته را می‌بیند.</p>
-            </div>
-            <div class="ar-cluster">
-                <div class="ar-shelf__nav">
-                    <button type="button" data-ar-shelf-prev aria-label="محصولات قبلی">
-                        <i class="icon-angle-right" aria-hidden="true"></i>
-                    </button>
-                    <button type="button" data-ar-shelf-next aria-label="محصولات بعدی">
-                        <i class="icon-angle-left" aria-hidden="true"></i>
-                    </button>
-                </div>
-                <a class="ar-link-more" href="{% url 'products:list' %}">
-                    مشاهده همه <i class="icon-long-arrow-left" aria-hidden="true"></i>
-                </a>
-            </div>
-        </div>
+        {% include 'shared/section_head.html' with title="جدیدترین محصولات" eyebrow="تازه رسیده" desc="اولین نفر باشید که تازه‌های این هفته را می‌بیند." more_url=shop_url more_text="مشاهده همه" shelf=True %}
 
         <div class="ar-shelf__track" data-ar-shelf>
             {% for product in new_products %}
@@ -155,6 +136,8 @@
             {% endfor %}
         </div>
     </div>
+    {% else %}
+    {% include 'shared/empty_state.html' with title="هنوز محصول تازه‌ای اضافه نشده" text="به‌زودی تازه‌های این هفته را اینجا می‌بینید." icon="icon-shopping-bag" action_url=shop_url action_label="مشاهده همه محصولات" %}
     {% endif %}
 </section>
 
@@ -214,26 +197,7 @@
 <section class="ar-band">
     <div class="ar-container">
         <div class="ar-shelf" data-ar-shelf-root>
-            <div class="ar-section-head">
-                <div class="ar-section-head__text">
-                    <span class="ar-eyebrow">انتخاب مشتریان</span>
-                    <h2 class="ar-section-title">محبوب‌های این ماه</h2>
-                    <p class="ar-section-desc">محصولاتی که بیشترین سفارش و رضایت را داشته‌اند.</p>
-                </div>
-                <div class="ar-cluster">
-                    <div class="ar-shelf__nav">
-                        <button type="button" data-ar-shelf-prev aria-label="محصولات قبلی">
-                            <i class="icon-angle-right" aria-hidden="true"></i>
-                        </button>
-                        <button type="button" data-ar-shelf-next aria-label="محصولات بعدی">
-                            <i class="icon-angle-left" aria-hidden="true"></i>
-                        </button>
-                    </div>
-                    <a class="ar-link-more" href="{% url 'products:list' %}?sort=popularity">
-                        مشاهده همه <i class="icon-long-arrow-left" aria-hidden="true"></i>
-                    </a>
-                </div>
-            </div>
+            {% include 'shared/section_head.html' with title="محبوب‌های این ماه" eyebrow="انتخاب مشتریان" desc="محصولاتی که بیشترین سفارش و رضایت را داشته‌اند." more_url=shop_url|add:"?sort=popularity" more_text="مشاهده همه" shelf=True %}
 
             <div class="ar-shelf__track" data-ar-shelf>
                 {% for product in trending_products %}
@@ -242,6 +206,10 @@
             </div>
         </div>
     </div>
+</section>
+{% else %}
+<section class="ar-container ar-section--tight">
+    {% include 'shared/empty_state.html' with title="محبوب‌ها در حال جمع‌آوری است" text="به‌زودی پرفروش‌های این ماه را اینجا می‌بینید." icon="icon-star" action_url=shop_url action_label="مشاهده همه محصولات" %}
 </section>
 {% endif %}
 

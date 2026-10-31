@@ -72,7 +72,7 @@
         <div class="ar-story__media ar-story__media--tall" data-ar-reveal>
             {% if about_page.who_we_are_image_front %}
             <img src="{{ about_page.who_we_are_image_front.url }}" alt="{{ about_page.who_we_are_title }}"
-                 loading="lazy" decoding="async">
+                 width="800" height="1067" loading="lazy" decoding="async">
             {% else %}
             <img src="{% static 'assets/images/v2/about-story-main.webp' %}"
                  alt="انتخاب و چیدمان محصولات در آریو شاپ"
@@ -81,7 +81,7 @@
 
             {% if about_page.who_we_are_image_back %}
             <span class="ar-story__thumb">
-                <img src="{{ about_page.who_we_are_image_back.url }}" alt="" loading="lazy" decoding="async">
+                <img src="{{ about_page.who_we_are_image_back.url }}" alt="" width="276" height="276" loading="lazy" decoding="async">
             </span>
             {% else %}
             <span class="ar-story__thumb">
@@ -138,7 +138,7 @@
             <span class="ar-brandrail__item">
             {% endif %}
                 {% if brand.logo %}
-                <img src="{{ brand.logo.url }}" alt="{{ brand.name }}" loading="lazy" decoding="async">
+                <img src="{{ brand.logo.url }}" alt="{{ brand.name }}" width="160" height="60" loading="lazy" decoding="async">
                 {% else %}
                 <span>{{ brand.name }}</span>
                 {% endif %}
@@ -149,7 +149,7 @@
             {% for brand in brands %}
             <span class="ar-brandrail__item" aria-hidden="true">
                 {% if brand.logo %}
-                <img src="{{ brand.logo.url }}" alt="" loading="lazy" decoding="async">
+                <img src="{{ brand.logo.url }}" alt="" width="160" height="60" loading="lazy" decoding="async">
                 {% else %}
                 <span>{{ brand.name }}</span>
                 {% endif %}
@@ -177,7 +177,7 @@
             <div class="ar-member__media">
                 {% if member.photo %}
                 <img src="{{ member.photo.url }}" alt="{{ member.name }}"
-                     loading="lazy" decoding="async">
+                     width="400" height="500" loading="lazy" decoding="async">
                 {% else %}
                 <span class="ar-member__fallback" aria-hidden="true">{{ member.name|slice:":1" }}</span>
                 {% endif %}

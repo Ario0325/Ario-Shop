@@ -66,7 +66,7 @@ git pull origin main
 `ash
 curl -X POST https://quiet-field-a090.mimoomim456.workers.dev/webhook/new-order-notify \
   -H "Content-Type: application/json" \
-  -d '{"secret_token":"ario-shop-secret-token","order_id":1,"order_number":"TEST-001","customer_name":"تست","customer_email":"test@test.com","customer_phone":"09123456789","total_price":100000,"shipping_cost":0,"discount":0,"payment_method":"آنلاین","shipping_address":"تهران","items":[{"name":"محصول تست","quantity":1,"unit_price":100000,"total_price":100000}],"created_at":"2026-06-15","status":"paid"}'
+  -d '{"secret_token":"CHANGE_ME_N8N_WEBHOOK_SECRET","order_id":1,"order_number":"TEST-001","customer_name":"تست","customer_email":"test@test.com","customer_phone":"09123456789","total_price":100000,"shipping_cost":0,"discount":0,"payment_method":"آنلاین","shipping_address":"تهران","items":[{"name":"محصول تست","quantity":1,"unit_price":100000,"total_price":100000}],"created_at":"2026-06-15","status":"paid"}'
 `
 
 **تست از طریق سایت:**
@@ -77,7 +77,7 @@ curl -X POST https://quiet-field-a090.mimoomim456.workers.dev/webhook/new-order-
 
 `json
 {
-  "secret_token": "ario-shop-secret-token",
+  "secret_token": "CHANGE_ME_N8N_WEBHOOK_SECRET",
   "order_id": 142,
   "order_number": "ORD-000142",
   "customer_name": "علی محمدی",
