@@ -1,4 +1,4 @@
-Django>=4.2,<4.3
+Django>=5.2,<5.3
 python-dotenv>=1.0.1
 django-ratelimit>=4.1.0
 jdatetime>=5.3.0
