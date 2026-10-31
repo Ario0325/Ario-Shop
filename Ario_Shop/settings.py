@@ -42,11 +42,11 @@ if not SECRET_KEY:
 # Read from environment or use defaults for development
 ALLOWED_HOSTS = [
     h.strip()
-    for h in os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,::1,aryaabdi.pythonanywhere.com,arya0325.pythonanywhere.com,aryaabdi1850325.pythonanywhere.com,aryaabdi13850325.pythonanywhere.com').split(',')
+    for h in os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,::1,ariaabdii.pythonanywhere.com,aryaabdi.pythonanywhere.com,arya0325.pythonanywhere.com,aryaabdi1850325.pythonanywhere.com,aryaabdi13850325.pythonanywhere.com').split(',')
     if h.strip()
 ]
 # Always ensure PythonAnywhere domains are included
-for _pa_host in ['aryaabdi.pythonanywhere.com', 'arya0325.pythonanywhere.com', 'aryaabdi1850325.pythonanywhere.com', 'aryaabdi13850325.pythonanywhere.com']:
+for _pa_host in ['ariaabdii.pythonanywhere.com', 'aryaabdi.pythonanywhere.com', 'arya0325.pythonanywhere.com', 'aryaabdi1850325.pythonanywhere.com', 'aryaabdi13850325.pythonanywhere.com']:
     if _pa_host not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(_pa_host)
 
@@ -275,6 +275,7 @@ CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:8000',
     'http://[::1]',
     'http://[::1]:8000',
+    'https://ariaabdii.pythonanywhere.com',
     'https://aryaabdi.pythonanywhere.com',
     'https://arya0325.pythonanywhere.com',
     'https://aryaabdi1850325.pythonanywhere.com',
