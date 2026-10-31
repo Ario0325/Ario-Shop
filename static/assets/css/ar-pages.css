@@ -1229,6 +1229,9 @@
     transition: color var(--t-fast), background-color var(--t-fast), border-color var(--t-fast);
 }
 .ar-cartrow__remove:hover { color: var(--danger); background: var(--danger-soft); border-color: transparent; }
+@media (hover: none) {
+    .ar-cartrow__remove { width: 44px; height: 44px; }
+}
 
 .ar-cartaside { position: sticky; top: calc(var(--hdr-offset) + 24px); transition: top var(--t-base) var(--ease); display: flex; flex-direction: column; gap: var(--sp-3); }
 
@@ -1274,6 +1277,49 @@
 .ar-ship.is-done .ar-ship__msg i { color: var(--success); }
 .ar-ship.is-done .ar-ship__bar span { background: var(--success); }
 .ar-drawer .ar-ship { margin: 0 0 var(--sp-3); }
+
+/* ── سبد زنده: وضعیت‌های به‌روزرسانی بدون رفرش ─────────────────────────── */
+.ar-js .ar-cart-update { display: none; }
+
+.ar-cartrow[aria-busy="true"] { opacity: .6; pointer-events: none; }
+.ar-cartrow.is-removing {
+    opacity: 0;
+    transform: translateX(-12px);
+    transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out);
+}
+
+/* ── نوار چسبان تکمیل خرید (موبایل/تبلت) ─────────────────────────────── */
+.ar-cartbar { display: none; }
+
+@media (max-width: 1024px) {
+    .ar-cartbar {
+        display: block;
+        position: fixed;
+        inset-inline: 0;
+        bottom: 0;
+        z-index: calc(var(--z-header) - 10);
+        padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+        background: var(--glass-strong);
+        border-top: 1px solid var(--border-soft);
+        -webkit-backdrop-filter: blur(18px);
+        backdrop-filter: blur(18px);
+        box-shadow: 0 -8px 30px rgba(36, 16, 24, .10);
+    }
+    body.has-cartbar { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
+    .ar-cartbar__inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        max-width: var(--container);
+        margin-inline: auto;
+    }
+    .ar-cartbar__amount { display: flex; flex-direction: column; line-height: 1.3; min-width: 0; }
+    .ar-cartbar__amount span { color: var(--faint); font-size: 0.62rem; }
+    .ar-cartbar__amount strong { color: var(--brand); font-size: var(--fs-sm); white-space: nowrap; }
+    [data-theme="dark"] .ar-cartbar__amount strong { color: var(--accent); }
+    .ar-cartbar__cta { flex: 0 0 auto; min-height: 46px; }
+}
 
 /* ── اطلاعات ارسال در سبد ─────────────────────────────────────────────── */
 .ar-addressform {
@@ -2488,6 +2534,7 @@ a.ar-stat:hover { border-color: var(--border); background: var(--surface-2); tra
     .ar-brandrail { overflow-x: auto; mask-image: none; -webkit-mask-image: none; }
     .ar-brandrail__track { animation: none; }
     .ar-brandrail [aria-hidden="true"] { display: none; }
+    .ar-cartrow.is-removing { transform: none; }
 }
 
 /* --------------------------------------------------------------------------
@@ -2754,6 +2801,7 @@ a.ar-stat:hover { border-color: var(--border); background: var(--surface-2); tra
     #scroll-top,
     .ar-preloader,
     .ar-buybar,
+    .ar-cartbar,
     .ar-inv__actions,
     .ar-breadcrumbs {
         display: none !important;
@@ -2778,4 +2826,9 @@ a.ar-stat:hover { border-color: var(--border); background: var(--surface-2); tra
 
     .ar-inv__foot { page-break-inside: avoid; }
     .ar-inv__table tr { page-break-inside: avoid; }
+}
+
+/* Wide desktops: slightly larger shelf cards to match the wider container. */
+@media (min-width: 1600px) {
+    .ar-shelf__track { grid-auto-columns: 288px; }
 }

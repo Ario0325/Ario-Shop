@@ -1,6 +1,7 @@
 {% extends 'shared/base.html' %}
 {% load static %}
 {% load number_tags %}
+{% load image_tags %}
 
 {% block title %}آریو شاپ | منتخبی از پوشاک، کیف و اکسسوری{% endblock %}
 {% block meta_description %}خرید آنلاین از آریو شاپ؛ منتخبی از پوشاک، کیف و اکسسوری با ضمانت اصالت، ارسال سریع و بازگشت ۷ روزه کالا.{% endblock %}
@@ -108,7 +109,8 @@
         <a class="ar-cat" href="{{ category.get_absolute_url }}" data-ar-reveal>
             <span class="ar-cat__media">
                 {% if category.image %}
-                <img src="{{ category.image.url }}" alt="{{ category.name }}"
+                {% thumb_url category.image 400 as cat_src %}
+                <img src="{{ cat_src }}" alt="{{ category.name }}"
                      width="240" height="300" loading="lazy" decoding="async">
                 {% else %}
                 <span class="ar-cat__fallback"><i class="icon-tag" aria-hidden="true"></i></span>

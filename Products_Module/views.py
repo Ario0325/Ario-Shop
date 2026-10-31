@@ -7,6 +7,7 @@ from django.urls import reverse
 from django.core.cache import cache
 from django_ratelimit.decorators import ratelimit
 from Core_Module.templatetags.number_tags import toman as format_toman
+from Core_Module.thumbnails import thumb_url
 from .models import Product, Category, Brand, ProductColor, ProductImage
 from .forms import ProductReviewForm
 
@@ -485,10 +486,7 @@ def suggest_products(request):
         image_url = ''
         images = list(product.images.all())
         if images:
-            try:
-                image_url = images[0].image.url
-            except ValueError:
-                image_url = ''
+            image_url = thumb_url(images[0].image, 96)
         product_rows.append({
             'name': product.name,
             'url': product.get_absolute_url(),

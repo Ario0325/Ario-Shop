@@ -2,6 +2,7 @@
 سرویس‌های سبد خرید و کد تخفیف
 """
 import logging
+import threading
 from decimal import Decimal
 
 import requests
@@ -336,24 +337,32 @@ class N8nOrderService:
             return False
 
     @classmethod
-    def send_order_confirmation(cls, order):
+    def _customer_fields(cls, order):
         customer_name = order.full_name
         if not customer_name and order.user:
             customer_name = order.user.get_full_name() or order.user.username
         customer_email = order.email
         if not customer_email and order.user:
             customer_email = order.user.email
+        return customer_name, customer_email
 
-        items = []
-        for item in order.items.select_related('product').all():
-            items.append({
+    @classmethod
+    def _items_payload(cls, order):
+        # order.items is prefetched by the payment view, so this stays one query
+        return [
+            {
                 "name": item.product_name,
                 "quantity": item.quantity,
                 "unit_price": int(item.price),
                 "total_price": int(item.total),
-            })
+            }
+            for item in order.items.all()
+        ]
 
-        payload = {
+    @classmethod
+    def build_order_payload(cls, order):
+        customer_name, customer_email = cls._customer_fields(order)
+        return {
             "secret_token": cls.WEBHOOK_SECRET,
             "order_id": order.id,
             "order_number": order.order_number,
@@ -365,49 +374,36 @@ class N8nOrderService:
             "discount": int(order.discount_amount),
             "created_at": order.created_at.isoformat(),
             "shipping_address": order.address,
-            "items": items,
+            "items": cls._items_payload(order),
             "sender_email": settings.N8N_SENDER_EMAIL,
         }
 
-        return cls._send_to_n8n(payload)
-
-
     @classmethod
-    def send_telegram_notification(cls, order):
-        customer_name = order.full_name
-        if not customer_name and order.user:
-            customer_name = order.user.get_full_name() or order.user.username
-        customer_email = order.email
-        if not customer_email and order.user:
-            customer_email = order.user.email
-        customer_phone = order.phone or ''
-
-        items = []
-        for item in order.items.select_related('product').all():
-            items.append({
-                "name": item.product_name,
-                "quantity": item.quantity,
-                "unit_price": int(item.price),
-                "total_price": int(item.total),
-            })
-
-        payload = {
+    def build_telegram_payload(cls, order):
+        customer_name, customer_email = cls._customer_fields(order)
+        return {
             "secret_token": cls.WEBHOOK_SECRET,
             "order_id": order.id,
             "order_number": order.order_number,
-            "customer_name": customer_name or "?????",
+            "customer_name": customer_name or "—",
             "customer_email": customer_email or "",
-            "customer_phone": customer_phone,
+            "customer_phone": order.phone or '',
             "total_price": int(order.subtotal),
             "shipping_cost": int(order.shipping_cost),
             "discount": int(order.discount_amount),
-            "payment_method": "??????",
+            "payment_method": "پرداخت آنلاین",
             "shipping_address": order.address,
-            "items": items,
+            "items": cls._items_payload(order),
             "created_at": order.created_at.isoformat(),
             "status": "paid",
         }
 
+    @classmethod
+    def send_order_confirmation(cls, order):
+        return cls._send_to_n8n(cls.build_order_payload(order))
+
+    @classmethod
+    def _send_telegram(cls, payload):
         telegram_url = settings.N8N_TELEGRAM_WEBHOOK_URL
         try:
             response = requests.post(
@@ -417,10 +413,42 @@ class N8nOrderService:
                 timeout=cls.TIMEOUT_SECONDS,
             )
             response.raise_for_status()
-            logger.info(
-                f"[telegram] ??????????? ????? ????? ??: order={order.order_number}"
-            )
+            logger.info(f"[telegram] اعلان سفارش ارسال شد: order={payload.get('order_number')}")
             return True
         except Exception as e:
-            logger.error(f"[telegram] ??? ?? ????? ??????????? ??????: {e}")
+            logger.error(f"[telegram] خطا در ارسال اعلان سفارش: {e}")
             return False
+
+    @classmethod
+    def send_telegram_notification(cls, order):
+        return cls._send_telegram(cls.build_telegram_payload(order))
+
+    @classmethod
+    def notify_order_async(cls, order):
+        """وبهوک‌ها را بعد از پاسخ پرداخت و در ترد پس‌زمینه ارسال می‌کند.
+
+        Payloadها در همین ترد ساخته می‌شوند تا کوئری‌های دیتابیس داخل ترد
+        پس‌زمینه اجرا نشوند؛ فقط فراخوانی‌های شبکه آنجا انجام می‌شوند.
+        """
+        try:
+            order_payload = cls.build_order_payload(order)
+            telegram_payload = cls.build_telegram_payload(order)
+        except Exception:
+            logger.exception("[n8n] ساخت payload اعلان سفارش %s ناموفق بود", order.pk)
+            return None
+
+        def deliver():
+            cls._send_to_n8n(order_payload)
+            cls._send_telegram(telegram_payload)
+
+        try:
+            thread = threading.Thread(
+                target=deliver,
+                name=f"order-notify-{order.pk}",
+                daemon=True,
+            )
+            thread.start()
+            return thread
+        except Exception:
+            logger.exception("[n8n] اجرای ترد اعلان سفارش %s ناموفق بود", order.pk)
+            return None

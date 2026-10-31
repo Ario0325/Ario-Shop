@@ -1,5 +1,6 @@
 {% load static %}
 {% load number_tags %}
+{% load image_tags %}
 {% comment %}
     بدنهٔ دراور سبد؛ هم در SSR و هم پس از AJAX از همین قالب استفاده می‌شود
     تا یک منبع حقیقت برای نشانه‌گذاری باقی بماند.
@@ -21,7 +22,8 @@
             <a href="{{ item.product.get_absolute_url }}" class="ar-cartline__img" tabindex="-1" aria-hidden="true">
                 {% with item.product.images.all.0 as img %}
                 {% if img %}
-                <img src="{{ img.image.url }}" alt="" loading="lazy" decoding="async" width="64" height="76">
+                {% thumb_url img.image 128 as line_src %}
+                <img src="{{ line_src }}" alt="" loading="lazy" decoding="async" width="64" height="76">
                 {% else %}
                 <img src="{% static 'assets/images/v2/placeholder-product.webp' %}" alt="" loading="lazy" decoding="async" width="64" height="76">
                 {% endif %}

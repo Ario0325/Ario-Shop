@@ -59,6 +59,6 @@ def robots_txt(request):
         'Disallow: /cart/',
         'Disallow: /admin/core/',
         '',
-        'Sitemap: https://arya0325.pythonanywhere.com/sitemap.xml',
+        f'Sitemap: {request.build_absolute_uri("/sitemap.xml")}',
     ]
     return HttpResponse('\n'.join(lines), content_type='text/plain')

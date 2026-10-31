@@ -1,10 +1,16 @@
-"""Audit icon classes used by templates against the extracted icon font."""
+"""Audit icon classes used by templates against the icon layer.
+
+Two sources provide glyphs: the legacy font (ario-icons.css) and the SVG masks
+in ar-components.css for line icons the font never shipped.
+"""
 import re
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[1]
 blk = (root / "static/assets/css/ario-icons.css").read_text(encoding="utf-8")
 have = {m for m in re.findall(r"\.(icon-[a-z0-9-]+):before", blk)}
+masks = (root / "static/assets/css/ar-components.css").read_text(encoding="utf-8")
+have |= {m for m in re.findall(r"\.(icon-[a-z0-9-]+)::before", masks)}
 
 skip = ("static", "docs", ".git", "admin", "node_modules")
 used = set()

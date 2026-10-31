@@ -1,10 +1,11 @@
 {% load static %}
 {% comment %}
-    Newsletter modal. ar.js opens it after a short delay (once per week after
-    dismissal). It posts to the contact endpoint, the only message sink in this
-    project, so the form carries the required hidden fields.
+    Newsletter modal. ar.js opens it after real engagement (scroll depth or
+    exit intent), never from a fixed timer, and once per week after dismissal.
+    It posts to the contact endpoint, the only message sink in this project, so
+    the form carries the required hidden fields.
 {% endcomment %}
-<div class="ar-modal ar-newsletter" id="ar-promo" data-ar-promo data-delay="9000"
+<div class="ar-modal ar-newsletter" id="ar-promo" data-ar-promo
      role="dialog" aria-modal="true" aria-labelledby="arPromoTitle" aria-hidden="true">
     <div class="ar-modal__dialog">
         <button class="ar-modal__close" type="button" data-ar-close aria-label="بستن">

@@ -110,7 +110,7 @@
         <i class="icon-angle-up" aria-hidden="true"></i>
     </button>
 
-    {% if site_settings.show_newsletter_popup %}{% include 'shared/newsletter_popup.html' %}{% endif %}
+    {% if site_settings.show_newsletter_popup and request.resolver_match.namespace != 'cart' and request.resolver_match.namespace != 'accounts' %}{% include 'shared/newsletter_popup.html' %}{% endif %}
 
     {% include 'shared/script.html' %}
     {% block extra_js %}{% endblock %}

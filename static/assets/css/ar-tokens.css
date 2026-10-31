@@ -308,3 +308,11 @@ html.is-hdr-compact { --hdr-offset: 62px; }
         color-scheme: dark;
     }
 }
+
+/* Wide desktops: use the extra space instead of stretching whitespace. */
+@media (min-width: 1600px) {
+    :root {
+        --container: 1480px;
+        --gutter:   32px;
+    }
+}

@@ -59,7 +59,7 @@
             store.sset("ar-loaded", "1");
             setTimeout(function () {
                 if (pre.parentNode) pre.parentNode.removeChild(pre);
-            }, 420);
+            }, 320);
         };
 
         if (!root.classList.contains("is-preloading") || reduce) {
@@ -82,7 +82,7 @@
         paint();
 
         var ticker = setInterval(function () {
-            var target = clamp(((performance.now() - started) / 380) * 92, 8, 92);
+            var target = clamp(((performance.now() - started) / 200) * 92, 8, 92);
             if (target > value) { value = target; paint(); }
         }, 45);
 
@@ -91,11 +91,11 @@
             clearInterval(ticker);
             value = 100;
             paint();
-            setTimeout(dismiss, 110);
+            setTimeout(dismiss, 90);
         };
 
         /* the loader is decorative: never wait for the full window load */
-        setTimeout(finish, 420);
+        setTimeout(finish, 220);
         on(window, "load", finish);
     }
 
@@ -766,7 +766,52 @@
                 : "سبد خرید خالی است";
         }
 
+        paintShipping(cart);
+        paintCartSummary(cart);
         markCartDrawerStale();
+    }
+
+    function paintShipping(cart) {
+        $$("[data-ar-ship]").forEach(function (ship) {
+            var free = !!cart.is_free_shipping;
+            ship.classList.toggle("is-done", free);
+
+            var truck = $("[data-ar-ship-truck]", ship);
+            var check = $("[data-ar-ship-check]", ship);
+            if (truck) truck.hidden = free;
+            if (check) check.hidden = !free;
+
+            var text = $("[data-ar-ship-text]", ship);
+            if (text) {
+                if (free) {
+                    text.textContent = "ارسال این سفارش رایگان است.";
+                } else {
+                    text.innerHTML = "<b>" + esc(cart.free_shipping_remaining_display) +
+                        "</b> دیگر تا ارسال رایگان";
+                }
+            }
+
+            var bar = $("[data-ar-ship-bar]", ship);
+            if (bar) {
+                var pct = cart.free_shipping_percent || 0;
+                bar.style.setProperty("--ar-progress", pct + "%");
+                bar.setAttribute("aria-valuenow", String(pct));
+            }
+        });
+    }
+
+    function paintCartSummary(cart) {
+        var set = function (selector, text) {
+            $$(selector).forEach(function (el) { el.textContent = text; });
+        };
+        set("[data-ar-summary-subtotal]", cart.total_display);
+        set("[data-ar-summary-shipping]", cart.shipping_display);
+        set("[data-ar-summary-payable]", cart.total_payable_display);
+
+        var discount = $("[data-ar-summary-discount]");
+        if (discount) discount.textContent = "− " + cart.discount_display;
+        var row = $("[data-ar-summary-discount-row]");
+        if (row) row.hidden = !cart.discount;
     }
 
     function flashAdded(btn) {
@@ -898,7 +943,12 @@
             cartFetch(form.action, form).then(function (out) {
                 var payload = out.payload || {};
                 if (payload.cart) applyCartPayload(payload.cart);
-                if (payload.ok) toast("info", "سبد خرید", "محصول از سبد خرید حذف شد.");
+                if (payload.ok) {
+                    toast("info", "سبد خرید", "محصول از سبد خرید حذف شد.");
+                    /* the cart page renders its own rows: reload so they match
+                       the drawer instead of showing stale quantities */
+                    if (doc.querySelector("[data-ar-cart-page]")) window.location.reload();
+                }
             }).catch(function () {
                 toast("danger", "خطای ارتباط", "حذف محصول انجام نشد؛ دوباره تلاش کنید.");
             }).then(function () {
@@ -906,6 +956,220 @@
                 if (btn) btn.disabled = false;
             });
         });
+    }
+
+    /* ----------------------------------------------------------------------
+       Cart page: live quantities, instant row removal, sticky mobile CTA
+       ---------------------------------------------------------------------- */
+    function initCartPage() {
+        var page = $("[data-ar-cart-page]");
+        if (!page || !window.fetch || !window.FormData) return;
+
+        var qtyForm = $("[data-ar-cart-qty-form]", page);
+        var emptyUrl = page.getAttribute("data-ar-cart-empty-url");
+        var announce = $("[data-ar-cart-announce]", page);
+        var pendingInputs = {};
+        var timer = null;
+        var busy = false;
+
+        var announceText = function (text) {
+            if (!announce || !text) return;
+            announce.textContent = "";
+            setTimeout(function () { announce.textContent = text; }, 40);
+        };
+
+        $$("[data-qty-input]", qtyForm || page).forEach(function (input) {
+            input.dataset.arQty = input.value;
+        });
+
+        var sendPending = function () {
+            if (!qtyForm || busy) return;
+            var ids = Object.keys(pendingInputs);
+            if (!ids.length) return;
+
+            var batch = pendingInputs;
+            pendingInputs = {};
+            busy = true;
+
+            var data = new FormData();
+            var token = qtyForm.querySelector('input[name="csrfmiddlewaretoken"]');
+            if (token) data.append("csrfmiddlewaretoken", token.value);
+
+            var rows = [];
+            ids.forEach(function (pid) {
+                var input = batch[pid];
+                data.append("qty_" + pid, String(input.value));
+                var row = input.closest("[data-ar-cart-row]");
+                if (row) {
+                    row.setAttribute("aria-busy", "true");
+                    rows.push(row);
+                }
+            });
+
+            fetch(qtyForm.action, {
+                method: "POST",
+                body: data,
+                headers: { "X-Requested-With": "XMLHttpRequest", "Accept": "application/json" },
+                credentials: "same-origin"
+            }).then(function (res) {
+                return res.json();
+            }).then(function (payload) {
+                if (!payload || !payload.ok) throw new Error("bad response");
+                if (payload.cart) applyCartPayload(payload.cart);
+
+                (payload.updated || []).forEach(function (line) {
+                    if (line.removed) return;
+                    var input = doc.getElementById("qty-" + line.product_id);
+                    if (input) {
+                        input.value = String(line.quantity);
+                        input.dataset.arQty = String(line.quantity);
+                    }
+                    var total = $('[data-ar-line-total="' + line.product_id + '"]');
+                    if (total) total.textContent = line.line_total_display;
+                    var qtyEl = $('[data-ar-line-qty="' + line.product_id + '"]');
+                    if (qtyEl) qtyEl.textContent = faNum(line.quantity) + " عدد";
+                });
+
+                announceText("سبد به‌روزرسانی شد؛ مبلغ قابل پرداخت " +
+                    (payload.cart ? payload.cart.total_payable_display : ""));
+
+                if (payload.cart && payload.cart.count === 0 && emptyUrl) {
+                    window.location.href = emptyUrl;
+                }
+            }).catch(function () {
+                toast("danger", "خطای ارتباط", "تغییر تعداد ثبت نشد؛ دوباره تلاش کنید.");
+                ids.forEach(function (pid) {
+                    var input = batch[pid];
+                    if (input && input.dataset.arQty) input.value = input.dataset.arQty;
+                });
+            }).then(function () {
+                busy = false;
+                rows.forEach(function (row) { row.removeAttribute("aria-busy"); });
+            });
+        };
+
+        if (qtyForm) {
+            on(qtyForm, "change", function (e) {
+                var input = e.target;
+                if (!input || !input.matches || !input.matches("[data-qty-input]")) return;
+                var pid = (input.name || "").replace("qty_", "");
+                if (!pid) return;
+
+                if (String(input.value) === String(input.dataset.arQty)) {
+                    delete pendingInputs[pid];
+                    return;
+                }
+
+                pendingInputs[pid] = input;
+                clearTimeout(timer);
+                timer = setTimeout(sendPending, 350);
+            });
+
+            /* the visible update button is hidden with JS; keep Enter from
+               reloading the page with a stale summary */
+            on(qtyForm, "submit", function (e) {
+                var btn = e.submitter;
+                if (btn && btn.hasAttribute("data-ar-cart-remove")) return;
+                e.preventDefault();
+                clearTimeout(timer);
+                sendPending();
+            });
+        }
+
+        on(page, "submit", function (e) {
+            var btn = e.submitter;
+            if (!btn || !btn.hasAttribute("data-ar-cart-remove")) return;
+            /* pending edits or an in-flight request: fall back to the normal
+               full-page submit so quantities cannot silently desync */
+            if (busy || Object.keys(pendingInputs).length) return;
+            if (!btn.form) return;
+
+            e.preventDefault();
+            var row = btn.closest("[data-ar-cart-row]");
+            var action = btn.formAction || btn.form.action;
+            var form = btn.form;
+            if (row) row.setAttribute("aria-busy", "true");
+
+            fetch(action, {
+                method: "POST",
+                body: new FormData(form),
+                headers: { "X-Requested-With": "XMLHttpRequest", "Accept": "application/json" },
+                credentials: "same-origin"
+            }).then(function (res) {
+                return res.json();
+            }).then(function (payload) {
+                if (!payload || !payload.ok) throw new Error("remove failed");
+                if (payload.cart) applyCartPayload(payload.cart);
+
+                if (payload.cart && payload.cart.count === 0 && emptyUrl) {
+                    window.location.href = emptyUrl;
+                    return;
+                }
+
+                if (row && row.parentNode) {
+                    row.classList.add("is-removing");
+                    setTimeout(function () {
+                        if (row.parentNode) row.parentNode.removeChild(row);
+                    }, 220);
+                }
+                toast("info", "سبد خرید", "محصول از سبد خرید حذف شد.");
+                announceText("محصول از سبد حذف شد؛ مبلغ قابل پرداخت " +
+                    (payload.cart ? payload.cart.total_payable_display : ""));
+            }).catch(function () {
+                toast("danger", "خطای ارتباط", "حذف محصول انجام نشد؛ دوباره تلاش کنید.");
+                if (row) row.removeAttribute("aria-busy");
+            });
+        });
+
+        var checkoutForm = doc.getElementById("ar-checkout-form");
+        if (checkoutForm) {
+            /* A closed <details> is not rendered, so its empty required fields
+               are exempt from constraint validation. Inspect them by hand,
+               otherwise an empty address submits to the server. Returns the
+               field to focus, or null when the form may go ahead. */
+            var firstInvalidAddressField = function (form) {
+                var details = $("details.ar-addressform", form);
+                if (details && !details.open) {
+                    var fields = $$("input, textarea", details);
+                    for (var i = 0; i < fields.length; i++) {
+                        var field = fields[i];
+                        if (field.required && !String(field.value || "").trim()) {
+                            details.open = true;
+                            return field;
+                        }
+                    }
+                    return null;
+                }
+                if (typeof form.checkValidity === "function" && !form.checkValidity()) {
+                    return form.querySelector(":invalid");
+                }
+                return null;
+            };
+
+            var focusAddressField = function (form, field) {
+                try { field.focus({ preventScroll: true }); } catch (err) { field.focus(); }
+                if (field.scrollIntoView) field.scrollIntoView({ block: "center", behavior: "smooth" });
+                if (typeof form.reportValidity === "function") form.reportValidity();
+            };
+
+            on(checkoutForm, "submit", function (e) {
+                if (e.defaultPrevented) return;
+                var invalid = firstInvalidAddressField(checkoutForm);
+                if (!invalid) return;
+                e.preventDefault();
+                focusAddressField(checkoutForm, invalid);
+            });
+
+            var checkoutBtn = $("[data-ar-checkout]");
+            if (checkoutBtn) {
+                on(checkoutBtn, "click", function (e) {
+                    var invalid = firstInvalidAddressField(checkoutForm);
+                    if (!invalid) return;
+                    e.preventDefault();
+                    focusAddressField(checkoutForm, invalid);
+                });
+            }
+        }
     }
 
     /* ----------------------------------------------------------------------
@@ -1708,17 +1972,67 @@
         var last = parseInt(store.get(key) || "0", 10);
         if (last && Date.now() - last < 7 * 864e5) return;
 
-        var delay = parseInt(modal.getAttribute("data-delay"), 10) || 9000;
-        var timer = setTimeout(function () {
-            if (layers.length) return;
-            openLayer(modal);
-        }, delay);
+        var mobile = !!(window.matchMedia && window.matchMedia("(max-width: 767px)").matches);
+        var started = Date.now();
+        var opened = false;
+        var timers = [];
+        var listeners = [];
+
+        var stop = function () {
+            timers.forEach(clearTimeout);
+            timers = [];
+            listeners.forEach(function (item) {
+                item[0].removeEventListener(item[1], item[2]);
+            });
+            listeners = [];
+        };
+
+        var listen = function (target, type, fn, opts) {
+            target.addEventListener(type, fn, opts);
+            listeners.push([target, type, fn]);
+        };
 
         var hide = $("[data-ar-promo-hide]", modal);
         on(modal, "ar:close", function () {
-            clearTimeout(timer);
+            stop();
             if (hide && hide.checked) store.set(key, String(Date.now()));
         });
+
+        /* Never interrupt an open drawer, dialog or search panel. */
+        var open = function () {
+            if (opened) return true;
+            if (layers.length) return false;
+            opened = true;
+            openLayer(modal);
+            stop();
+            return true;
+        };
+
+        var scrolledDeepEnough = function () {
+            var root = doc.documentElement;
+            var span = Math.max(root.scrollHeight - window.innerHeight, 1);
+            var y = window.pageYOffset || root.scrollTop || 0;
+            return y / span >= (mobile ? 0.55 : 0.4);
+        };
+
+        listen(window, "scroll", function () {
+            if (opened || Date.now() - started < 8000) return;
+            if (scrolledDeepEnough()) open();
+        }, { passive: true });
+
+        if (!mobile) {
+            listen(doc, "mouseout", function (e) {
+                if (opened || Date.now() - started < 12000) return;
+                if (e.clientY > 0 || e.relatedTarget) return;
+                open();
+            });
+
+            var fallback = function () {
+                if (opened) return;
+                if (!open()) timers.push(setTimeout(fallback, 10000));
+            };
+            timers.push(setTimeout(fallback, 30000));
+        }
     }
 
     /* ----------------------------------------------------------------------
@@ -1858,6 +2172,7 @@
         initQty();
         initCartAjax();
         initCartDrawer();
+        initCartPage();
         initFilters();
         initOtp();
         initPasswords();

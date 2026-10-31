@@ -4,14 +4,15 @@
     <link rel="preload" href="{% static 'assets/fonts/vazir-font-v16.1.0/Vazir-Bold.woff2' %}" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="{% static 'assets/fonts/estedad/Estedad-Variable.woff2' %}" as="font" type="font/woff2" crossorigin>
 
-    <!-- Icon glyph font (legacy theme, unchanged contract: .icon-* ) -->
-    <link rel="stylesheet" href="{% static 'assets/css/ario-icons.css' %}?v=2026-10-31c">
+    <!-- Icon glyph font (subset to used glyphs; ~8KB) -->
+    <link rel="preload" href="{% static 'assets/fonts/molla0ab2.woff2' %}" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="{% static 'assets/css/ario-icons.css' %}?v=2026-10-31d">
 
     <!-- Ario design system: tokens → base → components → pages -->
-    <link rel="stylesheet" href="{% static 'assets/css/ar-tokens.css' %}?v=2026-10-31c">
-    <link rel="stylesheet" href="{% static 'assets/css/ar-core.css' %}?v=2026-10-31c">
-    <link rel="stylesheet" href="{% static 'assets/css/ar-components.css' %}?v=2026-10-31c">
-    <link rel="stylesheet" href="{% static 'assets/css/ar-pages.css' %}?v=2026-10-31c">
+    <link rel="stylesheet" href="{% static 'assets/css/ar-tokens.css' %}?v=2026-10-31d">
+    <link rel="stylesheet" href="{% static 'assets/css/ar-core.css' %}?v=2026-10-31d">
+    <link rel="stylesheet" href="{% static 'assets/css/ar-components.css' %}?v=2026-10-31d">
+    <link rel="stylesheet" href="{% static 'assets/css/ar-pages.css' %}?v=2026-10-31d">
 
     <!-- Favicon / PWA -->
     <link rel="apple-touch-icon" sizes="180x180" href="{% static 'assets/images/icons/apple-touch-icon.png' %}">

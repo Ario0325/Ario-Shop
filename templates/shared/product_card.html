@@ -1,5 +1,6 @@
 {% load static %}
 {% load number_tags %}
+{% load image_tags %}
 {% comment %}
     Reusable product card. Expects `product` in context.
 {% endcomment %}
@@ -17,7 +18,8 @@
         <a href="{{ product.get_absolute_url }}" aria-label="{{ product.name }}">
             {% with imgs.0 as main %}
             {% if main %}
-            <img class="product-image" data-ar-img src="{{ main.image.url }}" alt="{{ main.alt_text|default:product.name }}"
+            {% thumb_url main.image 480 as main_src %}
+            <img class="product-image" data-ar-img src="{{ main_src }}" alt="{{ main.alt_text|default:product.name }}"
                  loading="lazy" decoding="async" width="400" height="500">
             {% else %}
             <img class="product-image" data-ar-img src="{% static 'assets/images/v2/placeholder-product.webp' %}" alt="{{ product.name }}"
@@ -25,7 +27,8 @@
             {% endif %}
             {% endwith %}
             {% if imgs.1 %}
-            <img class="product-image-hover" data-ar-img src="{{ imgs.1.image.url }}" alt=""
+            {% thumb_url imgs.1.image 480 as hover_src %}
+            <img class="product-image-hover" data-ar-img src="{{ hover_src }}" alt=""
                  aria-hidden="true" loading="lazy" decoding="async" width="400" height="500">
             {% endif %}
         </a>

@@ -1,15 +1,13 @@
-const CACHE_NAME = 'ario-shop-v11';
+const CACHE_NAME = 'ario-shop-v12';
+// Text font weights stay out of the install list: they are cached on first use
+// by cacheFirst below, which keeps the install fast and light on mobile data.
 const STATIC_ASSETS = [
     '/static/assets/css/ario-icons.css',
     '/static/assets/css/ar-tokens.css',
     '/static/assets/css/ar-core.css',
     '/static/assets/css/ar-components.css',
     '/static/assets/css/ar-pages.css',
-    '/static/assets/fonts/vazir-font-v16.1.0/Vazir-Light.woff2',
-    '/static/assets/fonts/vazir-font-v16.1.0/Vazir.woff2',
-    '/static/assets/fonts/vazir-font-v16.1.0/Vazir-Medium.woff2',
-    '/static/assets/fonts/vazir-font-v16.1.0/Vazir-Bold.woff2',
-    '/static/assets/fonts/estedad/Estedad-Variable.woff2',
+    '/static/assets/fonts/molla0ab2.woff2',
     '/static/assets/js/ar.js',
     '/static/assets/images/icons/android-chrome-192x192.png',
     '/static/assets/images/icons/android-chrome-256x256.png',

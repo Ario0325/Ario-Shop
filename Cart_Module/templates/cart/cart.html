@@ -1,10 +1,11 @@
 {% extends 'shared/base.html' %}
 {% load static %}
 {% load number_tags %}
+{% load image_tags %}
 
 {% block title %}سبد خرید | آریو شاپ{% endblock %}
 
-{% block body_class %}no-bottomnav{% endblock %}
+{% block body_class %}no-bottomnav has-cartbar{% endblock %}
 
 {% block content %}
 <div class="ar-container">
@@ -12,7 +13,10 @@
     {% include 'shared/page_head.html' with title="سبد خرید" desc="اقلام انتخابی خود را بررسی کنید؛ در مرحله بعد اطلاعات ارسال و پرداخت را تکمیل می‌کنید." eyebrow="مرحله ۱ از ۳" meta=cart_items|length|ar_digits|add:" نوع کالا" %}
 </div>
 
-<div class="ar-container page-content">
+<div class="ar-container page-content"
+     data-ar-cart-page
+     data-ar-cart-empty-url="{% url 'cart:empty' %}">
+    <p class="ar-sr-only" aria-live="polite" data-ar-cart-announce></p>
     <ol class="ar-cartsteps" aria-label="مراحل خرید">
         <li class="ar-step is-current" aria-current="step">
             <span class="ar-step__dot">۱</span>
@@ -32,16 +36,17 @@
 
     <div class="ar-cartlayout">
         <div>
-            <form action="{% url 'cart:update' %}" method="post" data-ar-lock>
+            <form action="{% url 'cart:update' %}" method="post" data-ar-lock data-ar-cart-qty-form>
                 {% csrf_token %}
 
                 <div class="ar-cartlist">
                     {% for item in cart_items %}
-                    <article class="ar-cartrow">
+                    <article class="ar-cartrow" data-ar-cart-row="{{ item.product.id }}">
                         <a class="ar-cartrow__media" href="{{ item.product.get_absolute_url }}" tabindex="-1" aria-hidden="true">
                             {% with img=item.product.images.all.0 %}
                             {% if img %}
-                            <img src="{{ img.image.url }}" alt="{{ item.product.name }}" width="104" height="130" loading="lazy" decoding="async">
+                            {% thumb_url img.image 208 as row_src %}
+                            <img src="{{ row_src }}" alt="{{ item.product.name }}" width="104" height="130" loading="lazy" decoding="async">
                             {% else %}
                             <img src="{% static 'assets/images/v2/placeholder-product.webp' %}" alt="" width="104" height="130" loading="lazy" decoding="async">
                             {% endif %}
@@ -76,7 +81,7 @@
                                 </button>
                             </div>
 
-                            <button type="submit" class="ar-cartrow__remove"
+                            <button type="submit" class="ar-cartrow__remove" data-ar-cart-remove
                                     formaction="{% url 'cart:remove' item.product.id %}"
                                     formmethod="post" formnovalidate
                                     name="next" value="{{ request.path }}"
@@ -86,15 +91,15 @@
                         </div>
 
                         <div class="ar-cartrow__price">
-                            <b>{{ item.total|toman }}</b>
-                            <small>{{ item.quantity|ar_digits }} عدد</small>
+                            <b data-ar-line-total="{{ item.product.id }}">{{ item.total|toman }}</b>
+                            <small data-ar-line-qty="{{ item.product.id }}">{{ item.quantity|ar_digits }} عدد</small>
                         </div>
                     </article>
                     {% endfor %}
                 </div>
 
                 <div class="ar-row-between mt-4">
-                    <button type="submit" class="ar-btn ar-btn--outline" data-ar-submit>
+                    <button type="submit" class="ar-btn ar-btn--outline ar-cart-update" data-ar-submit>
                         <i class="icon-refresh" aria-hidden="true"></i>
                         به‌روزرسانی سبد
                     </button>
@@ -114,13 +119,13 @@
 
                 <div class="ar-summary__row">
                     <span>جمع کالاها</span>
-                    <b>{{ cart_total|toman }}</b>
+                    <b data-ar-summary-subtotal>{{ cart_total|toman }}</b>
                 </div>
 
-                {% if discount_code and discount_amount %}
-                <div class="ar-summary__row ar-summary__row--off">
+                {% if discount_code %}
+                <div class="ar-summary__row ar-summary__row--off" data-ar-summary-discount-row{% if not discount_amount %} hidden{% endif %}>
                     <span><i class="icon-tag" aria-hidden="true"></i>تخفیف ({{ discount_code.code }})</span>
-                    <b>− {{ discount_amount|toman }}</b>
+                    <b data-ar-summary-discount>− {{ discount_amount|toman }}</b>
                 </div>
                 {% endif %}
 
@@ -128,16 +133,16 @@
 
                 <div class="ar-summary__row">
                     <span>هزینه ارسال</span>
-                    <b>{% if shipping_cost %}{{ shipping_cost|toman }}{% else %}رایگان{% endif %}</b>
+                    <b data-ar-summary-shipping>{% if shipping_cost %}{{ shipping_cost|toman }}{% else %}رایگان{% endif %}</b>
                 </div>
 
                 <div class="ar-summary__total">
                     <span>مبلغ قابل پرداخت</span>
-                    <b>{{ total_payable|toman }}</b>
+                    <b data-ar-summary-payable>{{ total_payable|toman }}</b>
                 </div>
 
                 {% if user.is_authenticated %}
-                <form method="post" action="{% url 'cart:checkout' %}" data-ar-lock class="ar-summary__cta">
+                <form method="post" action="{% url 'cart:checkout' %}" data-ar-lock class="ar-summary__cta" id="ar-checkout-form">
                     {% csrf_token %}
                     {% include 'cart/_address_form.html' %}
                     <button type="submit" class="ar-btn ar-btn--gold ar-btn--block ar-btn--lg mt-3">
@@ -200,6 +205,35 @@
                 {% endif %}
             </section>
         </aside>
+    </div>
+</div>
+{% endblock %}
+
+{% comment %}
+    Sticky mobile checkout bar lives outside <main> on purpose: <main> is
+    transformed by the page-reveal animation, which would break `position:
+    fixed`. The button references the real checkout form by id.
+{% endcomment %}
+{% block page_overlays %}
+<div class="ar-cartbar" data-ar-cartbar>
+    <div class="ar-cartbar__inner">
+        <div class="ar-cartbar__amount">
+            <span>مبلغ قابل پرداخت</span>
+            <strong data-ar-cart-payable>{{ total_payable|toman }}</strong>
+        </div>
+        {% if user.is_authenticated %}
+        <button type="submit" form="ar-checkout-form" class="ar-btn ar-btn--gold ar-cartbar__cta"
+                data-ar-checkout>
+            <i class="icon-credit-card" aria-hidden="true"></i>
+            تکمیل خرید
+        </button>
+        {% else %}
+        <a class="ar-btn ar-btn--gold ar-cartbar__cta"
+           href="{% url 'accounts:login_register' %}?next={{ request.path|urlencode }}">
+            <i class="icon-user" aria-hidden="true"></i>
+            ورود و تکمیل خرید
+        </a>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

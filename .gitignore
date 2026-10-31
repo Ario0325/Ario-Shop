@@ -18,6 +18,8 @@ staticfiles/
 *.log
 
 # media is tracked on purpose: PythonAnywhere serves it via the /media/ mapping
+# generated WebP thumbnails are rebuilt with `manage.py warm_thumbs`
+media/thumbs/
 .vscode/
 .idea/
 *.swp

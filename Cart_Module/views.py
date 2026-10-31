@@ -53,6 +53,7 @@ def _cart_payload(cart_items, totals):
             'total': int(totals['subtotal']),
             'total_display': format_toman(totals['subtotal']),
             'discount': int(totals['discount_amount']),
+            'discount_display': format_toman(totals['discount_amount']),
             'goods_net': int(totals['goods_net']),
             'shipping_cost': int(totals['shipping_cost']),
             'shipping_display': (
@@ -292,29 +293,65 @@ def cart_remove(request, product_id):
     return redirect(next_url or reverse('cart:detail'))
 
 
+def _updated_lines(items, product_ids):
+    """وضعیت نهایی هر ردیف پس از به‌روزرسانی تعداد (برای پاسخ AJAX)."""
+    by_id = {str(item['product'].pk): item for item in items}
+    lines = []
+    for pid in product_ids:
+        item = by_id.get(pid)
+        if item is None:
+            lines.append({'product_id': int(pid), 'removed': True})
+            continue
+        lines.append({
+            'product_id': item['product'].pk,
+            'quantity': item['quantity'],
+            'line_total': int(item['total']),
+            'line_total_display': format_toman(item['total']),
+            'price_display': format_toman(item['price']),
+        })
+    return lines
+
+
 @require_POST
 def cart_update(request):
-    """به‌روزرسانی تعداد چند آیتم - از جدول سبد (نام اینپوت: qty_{product_id})"""
+    """به‌روزرسانی تعداد چند آیتم - از جدول سبد (نام اینپوت: qty_{product_id})
+
+    درخواست AJAX فقط JSON برمی‌گرداند تا صفحه بدون رفرش به‌روز شود؛
+    ارسال معمولی فرم همان رفتار قبلی (redirect + پیام) را دارد.
+    """
+    ajax = _is_ajax(request)
     cart = _get_cart(request)
+    touched = []
     for key, value in request.POST.items():
-        if key.startswith('qty_'):
-            try:
-                product_id = int(key.replace('qty_', ''))
-                qty = int(value)
-                if qty < 1:
-                    cart.pop(str(product_id), None)
-                else:
-                    product = Product.objects.filter(pk=product_id, is_active=True, is_available=True).first()
-                    if product:
-                        max_qty = product.stock if product.stock else 99
-                        cart[str(product_id)] = min(qty, max_qty)
-            except (ValueError, TypeError):
-                continue
+        if not key.startswith('qty_'):
+            continue
+        try:
+            product_id = int(key.replace('qty_', ''))
+            qty = int(value)
+        except (ValueError, TypeError):
+            continue
+        touched.append(str(product_id))
+        if qty < 1:
+            cart.pop(str(product_id), None)
+            continue
+        product = Product.objects.filter(pk=product_id, is_active=True, is_available=True).first()
+        if product:
+            max_qty = product.stock if product.stock else 99
+            cart[str(product_id)] = min(qty, max_qty)
+
     request.session.modified = True
     sync_cart_to_db(request)
     _clear_cart_cache(request)  # پاک کردن کش سبد
-    messages.success(request, 'سبد خرید به‌روزرسانی شد.')
-    return redirect('cart:detail')
+
+    if not ajax:
+        messages.success(request, 'سبد خرید به‌روزرسانی شد.')
+        return redirect('cart:detail')
+
+    items, _ = _cart_item_list(request)
+    totals = build_cart_totals(items, get_active_discount_code(request))
+    payload = _cart_payload(items, totals)
+    payload['updated'] = _updated_lines(items, touched)
+    return JsonResponse(payload)
 
 
 def cart_context(request):
@@ -575,9 +612,8 @@ def payment_view(request, order_id):
             messages.error(request, 'خطا در پردازش سفارش. لطفاً دوباره تلاش کنید.')
             return redirect('cart:payment', order_id=order.id)
 
-        # وبهوک‌ها بعد از commit و بدون تاثیر روی نتیجه پرداخت
-        N8nOrderService.send_order_confirmation(order)
-        N8nOrderService.send_telegram_notification(order)
+        # وبهوک‌ها بعد از commit و خارج از مسیر پاسخ (ترد پس‌زمینه)
+        transaction.on_commit(lambda: N8nOrderService.notify_order_async(order))
 
         messages.success(request, 'پرداخت با موفقیت انجام شد. فاکتور شما آماده است.')
         return redirect('cart:invoice', order_id=order.id)

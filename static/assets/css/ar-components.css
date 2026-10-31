@@ -2588,6 +2588,26 @@ html.is-preloaded .ar-footer {
     font-size: var(--fs-2xs);
 }
 
+/* Mobile: the newsletter opens as a bottom sheet instead of a centred modal */
+@media (max-width: 767px) {
+    .ar-newsletter { place-items: end center; padding: 0; }
+    .ar-newsletter .ar-modal__dialog {
+        width: 100%;
+        max-height: 86vh;
+        border-radius: var(--r-xl) var(--r-xl) 0 0;
+        padding-bottom: env(safe-area-inset-bottom);
+        transform: translateY(100%);
+    }
+    .ar-newsletter__media { display: none; }
+    .ar-newsletter__body { padding: var(--sp-5) var(--sp-4) var(--sp-4); }
+    .ar-newsletter .ar-modal__close {
+        width: 44px;
+        height: 44px;
+        background: var(--surface-2);
+        border: 1px solid var(--border-soft);
+    }
+}
+
 /* --------------------------------------------------------------------------
    15. Back to top
    -------------------------------------------------------------------------- */

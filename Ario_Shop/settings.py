@@ -75,6 +75,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     # Security middleware - order matters!
     'django.middleware.security.SecurityMiddleware',
+    'django.middleware.gzip.GZipMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
