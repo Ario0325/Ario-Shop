@@ -6,13 +6,12 @@ from decimal import Decimal
 from urllib.parse import quote
 
 import jdatetime
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.db import transaction
-from django.db.models import F, Prefetch
+from django.db.models import Prefetch
 from django.http import JsonResponse, Http404
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
@@ -23,7 +22,7 @@ from django.views.decorators.http import require_POST, require_http_methods
 from django_ratelimit.decorators import ratelimit
 
 from Products_Module.models import Product, ProductImage
-from .models import Order, OrderItem, CartItem, DiscountCode
+from .models import Order, OrderItem, CartItem
 from .services import (
     sync_cart_to_db,
     load_cart_from_db,
@@ -485,22 +484,7 @@ def checkout_view(request):
 
     totals = build_cart_totals(items, discount_code_obj)
 
-    # کد تخفیف نباید کل مبلغ کالاها را صفر کند (جلوگیری از سفارش رایگان).
-    if discount_code_obj and totals['discount_amount'] >= totals['subtotal']:
-        remove_discount_from_session(request)
-        discount_code_obj = None
-        totals = build_cart_totals(items, None)
-        messages.warning(request, 'این کد تخفیف کل مبلغ کالاها را پوشش می‌دهد و مجاز نیست؛ از سبد حذف شد.')
-
     with transaction.atomic():
-        # قفل ردیف کد تخفیف تا چند سفارش هم‌زمان سقف استفاده را رد نکنند.
-        if discount_code_obj:
-            locked_code = DiscountCode.objects.select_for_update().get(pk=discount_code_obj.pk)
-            if not locked_code.has_usage_remaining() or not locked_code.user_can_use(request.user):
-                discount_code_obj = None
-                totals = build_cart_totals(items, None)
-                messages.warning(request, 'ظرفیت استفاده از این کد تخفیف تکمیل شده و از سفارش حذف شد.')
-
         order = Order(
             user=request.user,
             full_name=data['full_name'],
@@ -529,8 +513,10 @@ def checkout_view(request):
                 total=item['total'],
             )
 
-        # افزایش شمارنده استفاده از کد تخفیف در همان تراکنش سفارش
+        # افزایش شمارنده استفاده از کد تخفیف
         if discount_code_obj:
+            from django.db.models import F
+            from .models import DiscountCode
             DiscountCode.objects.filter(pk=discount_code_obj.pk).update(used_count=F('used_count') + 1)
 
     # خالی کردن سبد و کد تخفیف
@@ -551,16 +537,12 @@ class _InsufficientStockError(Exception):
 @never_cache
 @ratelimit(key='user', rate='10/m', block=True)
 def payment_view(request, order_id):
-    """نمایش صفحه پرداخت.
-
-    پرداخت شبیه‌سازی‌شده فقط برای staff یا در حالت DEBUG مجاز است تا کاربران
-    عادی بدون درگاه واقعی سفارش را «پرداخت‌شده» نکنند.
-    """
+    """نمایش صفحه پرداخت (شبیه‌سازی درگاه پرداخت) - با Rate Limiting"""
     # Require login to view payment page
     if not request.user.is_authenticated:
         from django.urls import reverse
         return redirect(reverse('accounts:login_register') + '?next=' + reverse('cart:payment', args=[order_id]))
-
+    
     order = get_object_or_404(
         Order.objects.prefetch_related('items__product'),
         pk=order_id
@@ -570,78 +552,39 @@ def payment_view(request, order_id):
         from django.http import HttpResponseForbidden
         return HttpResponseForbidden('دسترسی مجاز نیست.')
 
-    simulated_payment_enabled = bool(settings.DEBUG or request.user.is_staff)
-
-    # سفارش پرداخت‌شده دوباره پردازش نمی‌شود (idempotent).
-    if order.status == 'paid':
-        messages.info(request, 'این سفارش قبلاً پرداخت شده است.')
-        return redirect('cart:invoice', order_id=order.id)
-
     if request.method == 'POST':
-        if not simulated_payment_enabled:
-            messages.warning(
-                request,
-                'درگاه پرداخت آنلاین هنوز فعال نشده است؛ سفارش شما ثبت شد و '
-                'برای هماهنگی پرداخت با پشتیبانی تماس بگیرید.',
-            )
-            return redirect('cart:detail')
-
-        paid_now = False
+        # Reduce product stock
         try:
             with transaction.atomic():
-                # قفل سفارش تا دو درخواست هم‌زمان موجودی را دوبار کم نکنند.
-                locked_order = Order.objects.select_for_update().get(
-                    pk=order.pk, user=request.user
-                )
-                if locked_order.status == 'paid':
-                    # درخواست تکراری؛ هیچ تغییری اعمال نمی‌شود.
-                    locked_order = None
-                elif locked_order.status != 'pending':
-                    messages.error(request, 'این سفارش در وضعیت فعلی قابل پرداخت نیست.')
-                    return redirect('cart:detail')
-                else:
-                    for item in locked_order.items.all():
-                        product = Product.objects.select_for_update().get(pk=item.product_id)
-                        if product.stock < item.quantity:
-                            raise _InsufficientStockError(product.name)
-                        product.stock -= item.quantity
-                        if product.stock <= 0:
-                            product.is_available = False
-                        product.save(update_fields=['stock', 'is_available'])
+                for item in order.items.all():
+                    product = Product.objects.select_for_update().get(pk=item.product_id)
+                    if product.stock < item.quantity:
+                        raise _InsufficientStockError(product.name)
+                    product.stock -= item.quantity
+                    if product.stock <= 0:
+                        product.is_available = False
+                    product.save(update_fields=['stock', 'is_available'])
 
-                    locked_order.status = 'paid'
-                    locked_order.save(update_fields=['status', 'updated_at'])
-                    paid_now = True
+                order.status = 'paid'
+                order.save(update_fields=['status', 'updated_at'])
         except _InsufficientStockError as exc:
             messages.error(request, f'موجودی کافی از «{exc}» وجود ندارد.')
             return redirect('cart:payment', order_id=order.id)
-        except Order.DoesNotExist:
-            messages.error(request, 'سفارش یافت نشد.')
-            return redirect('cart:detail')
         except Exception:
             logger.exception('payment processing failed for order %s', order.pk)
             messages.error(request, 'خطا در پردازش سفارش. لطفاً دوباره تلاش کنید.')
             return redirect('cart:payment', order_id=order.id)
 
-        if not paid_now:
-            messages.info(request, 'این سفارش قبلاً پرداخت شده است.')
-            return redirect('cart:invoice', order_id=order.id)
-
-        # وبهوک‌ها فقط یک بار و بعد از commit، بدون تاثیر روی نتیجه پرداخت
-        order.refresh_from_db()
+        # وبهوک‌ها بعد از commit و بدون تاثیر روی نتیجه پرداخت
         N8nOrderService.send_order_confirmation(order)
         N8nOrderService.send_telegram_notification(order)
 
         messages.success(request, 'پرداخت با موفقیت انجام شد. فاکتور شما آماده است.')
         return redirect('cart:invoice', order_id=order.id)
 
-    return render(request, 'cart/payment.html', {
-        'order': order,
-        'simulated_payment_enabled': simulated_payment_enabled,
-    })
+    return render(request, 'cart/payment.html', {'order': order})
 
 
-@never_cache
 def invoice_view(request, order_id):
     """نمایش فاکتور سفارش (فقط سفارش خود کاربر)"""
     # Require login to view invoice

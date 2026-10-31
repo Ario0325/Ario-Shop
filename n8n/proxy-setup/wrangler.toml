@@ -1,7 +1,3 @@
 name = "quiet-field-a090"
 main = "worker.js"
 compatibility_date = "2024-01-01"
-
-# Secrets are NOT stored here. Set them once with:
-#   npx wrangler secret put WORKER_SHARED_SECRET
-#   npx wrangler secret put N8N_WEBHOOK_SECRET

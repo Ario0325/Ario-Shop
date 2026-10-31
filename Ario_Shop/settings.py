@@ -82,7 +82,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'Core_Module.middleware.ContentSecurityPolicyMiddleware',
 ]
 
 ROOT_URLCONF = 'Ario_Shop.urls'
@@ -118,7 +117,7 @@ WSGI_APPLICATION = 'Ario_Shop.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        # اجازهٔ تعیین مسیر دیتابیس با متغیر محیطی؛ پیش‌فرض کنار پروژه است.
+        # Optional external database path; keeps the live DB outside the repo.
         'NAME': Path(os.environ['DB_PATH']) if os.environ.get('DB_PATH') else BASE_DIR / 'db.sqlite3',
         'OPTIONS': {'timeout': 20},
     }
@@ -242,10 +241,6 @@ DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'آریو شاپ <nore
 N8N_WEBHOOK_URL = os.environ.get('N8N_WEBHOOK_URL', '')
 N8N_WEBHOOK_SECRET = os.environ.get('N8N_WEBHOOK_SECRET', '')
 OTP_EXPIRY_MINUTES = int(os.environ.get('OTP_EXPIRY_MINUTES', '15'))
-
-# سکرت مشترک بین Django و Cloudflare Worker؛ Worker فقط درخواست‌های دارای
-# این هدر را به n8n فوروارد می‌کند تا سرویس به یک رلهٔ باز تبدیل نشود.
-WORKER_SHARED_SECRET = os.environ.get('WORKER_SHARED_SECRET', '')
 
 N8N_ORDER_WEBHOOK_URL = os.environ.get('N8N_ORDER_WEBHOOK_URL', '')
 N8N_ORDER_WEBHOOK_SECRET = os.environ.get('N8N_ORDER_WEBHOOK_SECRET', N8N_WEBHOOK_SECRET)

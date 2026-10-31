@@ -92,8 +92,8 @@ class RegisterForm(UserCreationForm):
         return user
 
     def clean_email(self):
-        email = (self.cleaned_data.get('email') or '').strip().lower()
-        if email and User.objects.filter(email__iexact=email).exists():
+        email = self.cleaned_data.get('email')
+        if email and User.objects.filter(email=email).exists():
             raise forms.ValidationError('این ایمیل قبلاً ثبت شده است.')
         return email
 

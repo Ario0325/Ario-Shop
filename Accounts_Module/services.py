@@ -1,7 +1,6 @@
 import logging
 import requests
 from django.conf import settings
-from django.utils.html import escape
 
 logger = logging.getLogger(__name__)
 
@@ -18,9 +17,6 @@ class N8nAuthService:
         headers = {'Content-Type': 'application/json'}
         if cls.WEBHOOK_SECRET:
             headers['X-Webhook-Secret'] = cls.WEBHOOK_SECRET
-        worker_secret = getattr(settings, 'WORKER_SHARED_SECRET', '')
-        if worker_secret:
-            headers['X-Worker-Secret'] = worker_secret
         return headers
 
     @classmethod
@@ -34,7 +30,7 @@ class N8nAuthService:
             )
             response.raise_for_status()
             logger.info(
-                "n8n webhook موفق: event=%s", payload.get('event')
+                f"n8n webhook موفق: event={payload.get('event')}, email={payload.get('email')}"
             )
             return True
         except requests.exceptions.ConnectionError:
@@ -55,7 +51,7 @@ class N8nAuthService:
         payload = {
             "event": "register",
             "email": email,
-            "username": escape(username or "کاربر"),
+            "username": username or "کاربر",
             "code": code,
             "reset_link": "",
             "sender_email": settings.N8N_SENDER_EMAIL,
@@ -68,7 +64,7 @@ class N8nAuthService:
         payload = {
             "event": "password_reset",
             "email": email,
-            "username": escape(username or "کاربر"),
+            "username": username or "کاربر",
             "code": code,
             "reset_link": "",
             "sender_email": settings.N8N_SENDER_EMAIL,

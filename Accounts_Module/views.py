@@ -6,8 +6,6 @@ import logging
 from django.core.paginator import Paginator
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout, get_user_model
-from django.contrib.auth.password_validation import validate_password
-from django.core.exceptions import ValidationError
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from django_ratelimit.decorators import ratelimit
@@ -29,17 +27,6 @@ from .services import N8nAuthService
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
-
-
-def _find_user_by_email(email, active_only=False):
-    """جستجوی امن ایمیل؛ در صورت تکراری بودن، اولین کاربر را برمی‌گرداند."""
-    email = (email or '').strip()
-    if not email:
-        return None
-    queryset = User.objects.filter(email__iexact=email)
-    if active_only:
-        queryset = queryset.filter(is_active=True)
-    return queryset.order_by('id').first()
 
 
 class LoginRegisterView(View):
@@ -125,13 +112,14 @@ class VerifyEmailView(View):
             messages.error(request, _('ابتدا ثبت‌نام کنید.'))
             return redirect('accounts:login_register')
 
-        user = _find_user_by_email(email)
-        verification = getattr(user, 'verification', None) if user else None
-        if not user or not verification:
-            messages.error(request, _('کد تأیید نامعتبر است.'))
-            return redirect('accounts:login_register')
-        if verification.is_verified:
-            messages.info(request, _('ایمیل شما قبلاً تأیید شده است. لطفاً وارد شوید.'))
+        try:
+            user = User.objects.get(email=email)
+            verification = user.verification
+            if verification.is_verified:
+                messages.info(request, _('ایمیل شما قبلاً تأیید شده است. لطفاً وارد شوید.'))
+                return redirect('accounts:login_register')
+        except (User.DoesNotExist, UserVerification.DoesNotExist):
+            messages.error(request, _('کاربری با این ایمیل یافت نشد.'))
             return redirect('accounts:login_register')
 
         return render(request, 'accounts/verify_email.html', {
@@ -139,9 +127,10 @@ class VerifyEmailView(View):
             'email': email,
         })
 
-    @method_decorator(ratelimit(key='ip', rate='10/m', block=True))
     def post(self, request):
         email = request.session.get('verify_email')
+        if not email:
+            email = request.GET.get('email')
         if not email:
             messages.error(request, _('ابتدا ثبت‌نام کنید.'))
             return redirect('accounts:login_register')
@@ -149,17 +138,14 @@ class VerifyEmailView(View):
         form = VerifyCodeForm(request.POST)
         if form.is_valid():
             code = form.cleaned_data['code']
-            user = _find_user_by_email(email)
-            verification = getattr(user, 'verification', None) if user else None
-            if not user or not verification:
-                messages.error(request, _('کد تأیید نامعتبر است.'))
+            try:
+                user = User.objects.get(email=email)
+                verification = user.verification
+            except (User.DoesNotExist, UserVerification.DoesNotExist):
+                messages.error(request, _('کاربری با این ایمیل یافت نشد.'))
                 return redirect('accounts:login_register')
 
-            if verification.is_verified:
-                messages.info(request, _('ایمیل شما قبلاً تأیید شده است. لطفاً وارد شوید.'))
-                return redirect('accounts:login_register')
-
-            if verification.is_expired() or not verification.code:
+            if verification.is_expired():
                 messages.error(request, _('کد تأیید منقضی شده است. لطفاً کد جدید دریافت کنید.'))
                 return render(request, 'accounts/verify_email.html', {
                     'form': form,
@@ -168,22 +154,16 @@ class VerifyEmailView(View):
                 })
 
             if not hmac.compare_digest(verification.code, code):
-                locked = verification.register_failed_attempt()
-                if locked:
-                    messages.error(request, _('تعداد تلاش‌های ناموفق بیش از حد مجاز است. لطفاً کد جدید دریافت کنید.'))
-                else:
-                    messages.error(request, _('کد تأیید اشتباه است.'))
+                messages.error(request, _('کد تأیید اشتباه است.'))
                 return render(request, 'accounts/verify_email.html', {
                     'form': form,
                     'email': email,
                 })
 
             verification.is_verified = True
-            verification.code = ''
-            verification.attempts = 0
-            verification.save(update_fields=['is_verified', 'code', 'attempts'])
+            verification.save()
             user.is_active = True
-            user.save(update_fields=['is_active'])
+            user.save()
 
             request.session.pop('verify_email', None)
             request.session.cycle_key()
@@ -211,15 +191,15 @@ class ResendVerificationView(View):
             messages.error(request, _('ایمیل یافت نشد.'))
             return redirect('accounts:login_register')
 
-        user = _find_user_by_email(email)
-        verification = getattr(user, 'verification', None) if user else None
-        if not user or not verification:
-            messages.success(request, _('اگر حسابی با این ایمیل در انتظار تأیید باشد، کد جدید ارسال می‌شود.'))
+        try:
+            user = User.objects.get(email=email)
+            verification = user.verification
+        except (User.DoesNotExist, UserVerification.DoesNotExist):
+            messages.error(request, _('کاربری با این ایمیل یافت نشد.'))
             return redirect('accounts:login_register')
 
         if verification.is_verified:
-            # پاسخ عمومی تا وجود/تأیید بودن حساب لو نرود.
-            messages.success(request, _('اگر حسابی با این ایمیل در انتظار تأیید باشد، کد جدید ارسال می‌شود.'))
+            messages.info(request, _('این حساب قبلاً تأیید شده است.'))
             return redirect('accounts:login_register')
 
         verification.refresh_code()
@@ -267,14 +247,13 @@ class ForgetPasswordView(View):
 
         form = ForgetPasswordEmailForm(request.POST)
         if form.is_valid():
-            email = form.cleaned_data['email'].strip().lower()
-            user = _find_user_by_email(email, active_only=True)
-            request.session['reset_email'] = email
+            email = form.cleaned_data['email']
 
-            # پاسخ یکسان برای ایمیل موجود و ناموجود تا امکان شناسایی حساب‌ها از بین برود.
-            messages.success(request, _('اگر این ایمیل در سیستم ثبت باشد، کد بازیابی ارسال می‌شود.'))
-            if not user:
-                return redirect('accounts:forget_password_verify')
+            try:
+                user = User.objects.get(email=email, is_active=True)
+            except User.DoesNotExist:
+                messages.success(request, _('اگر این ایمیل در سیستم ثبت باشد، کد بازیابی ارسال می‌شود.'))
+                return redirect('accounts:forget_password')
 
             PasswordResetToken.objects.filter(user=user, is_used=False).update(is_used=True)
             reset_token = PasswordResetToken.objects.create(user=user)
@@ -290,6 +269,8 @@ class ForgetPasswordView(View):
                 messages.error(request, _('خطا در ارسال ایمیل. لطفاً دوباره تلاش کنید.'))
                 return render(request, 'accounts/forget_password.html', {'form': form})
 
+            request.session['reset_email'] = email
+            messages.success(request, _('کد بازیابی به ایمیل شما ارسال شد.'))
             return redirect('accounts:forget_password_verify')
 
         return render(request, 'accounts/forget_password.html', {'form': form})
@@ -309,7 +290,6 @@ class ForgetPasswordVerifyView(View):
             'email': email,
         })
 
-    @method_decorator(ratelimit(key='ip', rate='10/m', block=True))
     def post(self, request):
         email = request.session.get('reset_email')
         if not email:
@@ -321,23 +301,17 @@ class ForgetPasswordVerifyView(View):
             code = form.cleaned_data['code']
             new_password = form.cleaned_data['new_password1']
 
-            user = _find_user_by_email(email, active_only=True)
-            reset_token = None
-            if user:
+            try:
+                user = User.objects.get(email=email, is_active=True)
                 reset_token = PasswordResetToken.objects.filter(
                     user=user, is_used=False,
-                ).order_by('-created_at').first()
+                ).latest('created_at')
+            except (User.DoesNotExist, PasswordResetToken.DoesNotExist):
+                messages.error(request, _('درخواست بازیابی یافت نشد. لطفاً دوباره تلاش کنید.'))
+                return redirect('accounts:forget_password')
 
-            generic_error = _('کد نامعتبر یا منقضی شده است. لطفاً کد جدید دریافت کنید.')
-            if not user or not reset_token:
-                messages.error(request, generic_error)
-                return render(request, 'accounts/forget_password_verify.html', {
-                    'form': form,
-                    'email': email,
-                })
-
-            if reset_token.is_expired() or not reset_token.code:
-                messages.error(request, generic_error)
+            if reset_token.is_expired():
+                messages.error(request, _('کد بازیابی منقضی شده است. لطفاً کد جدید دریافت کنید.'))
                 return render(request, 'accounts/forget_password_verify.html', {
                     'form': form,
                     'email': email,
@@ -345,30 +319,16 @@ class ForgetPasswordVerifyView(View):
                 })
 
             if not hmac.compare_digest(reset_token.code, code):
-                reset_token.register_failed_attempt()
-                messages.error(request, generic_error)
-                return render(request, 'accounts/forget_password_verify.html', {
-                    'form': form,
-                    'email': email,
-                })
-
-            try:
-                validate_password(new_password, user=user)
-            except ValidationError as exc:
-                for message in exc.messages:
-                    form.add_error('new_password1', message)
+                messages.error(request, _('کد بازیابی اشتباه است.'))
                 return render(request, 'accounts/forget_password_verify.html', {
                     'form': form,
                     'email': email,
                 })
 
             user.set_password(new_password)
-            user.save(update_fields=['password'])
+            user.save()
             reset_token.is_used = True
-            reset_token.code = ''
-            reset_token.attempts = 0
-            reset_token.save(update_fields=['is_used', 'code', 'attempts'])
-            PasswordResetToken.objects.filter(user=user, is_used=False).update(is_used=True)
+            reset_token.save()
 
             request.session.pop('reset_email', None)
             messages.success(request, _('رمز عبور شما با موفقیت تغییر کرد.'))
@@ -390,10 +350,11 @@ class ResendResetCodeView(View):
             messages.error(request, _('ابتدا درخواست بازیابی رمز دهید.'))
             return redirect('accounts:forget_password')
 
-        user = _find_user_by_email(email, active_only=True)
-        if not user:
-            messages.success(request, _('اگر این ایمیل در سیستم ثبت باشد، کد بازیابی ارسال می‌شود.'))
-            return redirect('accounts:forget_password_verify')
+        try:
+            user = User.objects.get(email=email, is_active=True)
+        except User.DoesNotExist:
+            messages.error(request, _('کاربری با این ایمیل یافت نشد.'))
+            return redirect('accounts:forget_password')
 
         PasswordResetToken.objects.filter(user=user, is_used=False).update(is_used=True)
         reset_token = PasswordResetToken.objects.create(user=user)
@@ -485,30 +446,17 @@ def user_order_cancel_view(request, order_id):
 
     if request.method == 'POST':
         from django.db import transaction
-        from django.db.models import F
-        from Cart_Module.models import DiscountCode
-        from Products_Module.models import Product
         with transaction.atomic():
             order = type(order).objects.select_for_update().get(pk=order.pk)
             if order.status not in cancellable_statuses:
                 messages.error(request, _('این سفارش قابل لغو نیست.'))
                 return redirect('accounts:order_detail', order_id=order.id)
-
-            # موجودی فقط برای سفارش‌هایی برمی‌گردد که در زمان پرداخت کم شده‌اند.
-            if order.status in ('paid', 'processing'):
-                for item in order.items.all():
-                    if item.product_id:
-                        Product.objects.filter(pk=item.product_id).update(
-                            stock=F('stock') + item.quantity,
-                            is_available=True,
-                        )
-
-            # ظرفیت کد تخفیف در زمان ثبت سفارش مصرف شده بود؛ با لغو آزاد می‌شود.
-            if order.discount_code_id:
-                DiscountCode.objects.filter(
-                    pk=order.discount_code_id, used_count__gt=0
-                ).update(used_count=F('used_count') - 1)
-
+            for item in order.items.select_related('product').all():
+                if item.product:
+                    item.product.stock += item.quantity
+                    if item.product.stock > 0:
+                        item.product.is_available = True
+                    item.product.save(update_fields=['stock', 'is_available'])
             order.status = 'cancelled'
             order.save(update_fields=['status', 'updated_at'])
         messages.success(request, _('سفارش با موفقیت لغو شد.'))

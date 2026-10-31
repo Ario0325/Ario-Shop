@@ -8,10 +8,6 @@ from django.conf import settings
 from django.utils import timezone
 
 
-# حداکثر تعداد تلاش ناموفق برای هر کد؛ پس از آن کد باطل می‌شود.
-MAX_OTP_ATTEMPTS = 5
-
-
 def generate_otp():
     return ''.join(secrets.choice('0123456789') for _ in range(6))
 
@@ -26,7 +22,6 @@ class UserVerification(models.Model):
         verbose_name='کاربر',
     )
     code = models.CharField(max_length=6, default=generate_otp, verbose_name='کد تأیید')
-    attempts = models.PositiveSmallIntegerField(default=0, verbose_name='تلاش‌های ناموفق')
     is_verified = models.BooleanField(default=False, verbose_name='تأیید شده')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاریخ ایجاد')
     expires_at = models.DateTimeField(verbose_name='تاریخ انقضا')
@@ -46,21 +41,9 @@ class UserVerification(models.Model):
 
     def refresh_code(self):
         self.code = generate_otp()
-        self.attempts = 0
         expiry = getattr(settings, 'OTP_EXPIRY_MINUTES', 15)
         self.expires_at = timezone.now() + timedelta(minutes=expiry)
         self.save()
-
-    def register_failed_attempt(self):
-        """تلاش ناموفق را ثبت می‌کند و در صورت رسیدن به سقف، کد را باطل می‌کند."""
-        self.attempts = (self.attempts or 0) + 1
-        update_fields = ['attempts']
-        if self.attempts >= MAX_OTP_ATTEMPTS:
-            self.code = ''
-            self.expires_at = timezone.now()
-            update_fields += ['code', 'expires_at']
-        self.save(update_fields=update_fields)
-        return self.attempts >= MAX_OTP_ATTEMPTS
 
     def __str__(self):
         return f"{self.user.email} - {'تأیید شده' if self.is_verified else 'تأیید نشده'}"
@@ -76,7 +59,6 @@ class PasswordResetToken(models.Model):
         verbose_name='کاربر',
     )
     code = models.CharField(max_length=6, default=generate_otp, verbose_name='کد بازیابی')
-    attempts = models.PositiveSmallIntegerField(default=0, verbose_name='تلاش‌های ناموفق')
     is_used = models.BooleanField(default=False, verbose_name='استفاده شده')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاریخ ایجاد')
     expires_at = models.DateTimeField(verbose_name='تاریخ انقضا')
@@ -96,21 +78,9 @@ class PasswordResetToken(models.Model):
 
     def refresh_code(self):
         self.code = generate_otp()
-        self.attempts = 0
         expiry = getattr(settings, 'OTP_EXPIRY_MINUTES', 15)
         self.expires_at = timezone.now() + timedelta(minutes=expiry)
         self.save()
-
-    def register_failed_attempt(self):
-        """تلاش ناموفق را ثبت می‌کند و در صورت رسیدن به سقف، توکن را باطل می‌کند."""
-        self.attempts = (self.attempts or 0) + 1
-        update_fields = ['attempts']
-        if self.attempts >= MAX_OTP_ATTEMPTS:
-            self.code = ''
-            self.is_used = True
-            update_fields += ['code', 'is_used']
-        self.save(update_fields=update_fields)
-        return self.attempts >= MAX_OTP_ATTEMPTS
 
     def __str__(self):
         return f"{self.user.email} - {'استفاده شده' if self.is_used else 'معتبر'}"

@@ -13,12 +13,13 @@ class EmailOrUsernameBackend(ModelBackend):
     def authenticate(self, request, username=None, password=None, **kwargs):
         if username is None or password is None:
             return None
-        username = username.strip()
         if '@' in username:
-            user = User.objects.filter(email__iexact=username).order_by('id').first()
+            kwargs = {'email': username}
         else:
-            user = User.objects.filter(username=username).first()
-        if user is None:
+            kwargs = {'username': username}
+        try:
+            user = User.objects.get(**kwargs)
+        except User.DoesNotExist:
             User().set_password(password)  # محدود کردن زمان حمله
             return None
         if user.check_password(password) and self.user_can_authenticate(user):
