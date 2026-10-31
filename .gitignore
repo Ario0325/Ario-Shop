@@ -17,8 +17,7 @@ db.json
 staticfiles/
 *.log
 
-media/
-
+# media is tracked on purpose: PythonAnywhere serves it via the /media/ mapping
 .vscode/
 .idea/
 *.swp
