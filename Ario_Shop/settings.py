@@ -39,15 +39,25 @@ if not SECRET_KEY:
             'Generate one with: python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"'
         )
 
+# PythonAnywhere domains (kept in both ALLOWED_HOSTS and CSRF_TRUSTED_ORIGINS)
+_PYTHONANYWHERE_HOSTS = [
+    'ariaabdii.pythonanywhere.com',
+    'aryaabdi.pythonanywhere.com',
+    'arya0325.pythonanywhere.com',
+    'aryaabdi1850325.pythonanywhere.com',
+    'aryaabdi13850325.pythonanywhere.com',
+    'aryaabdishop.pythonanywhere.com',
+]
+
 # Allowed hosts configuration
 # Read from environment or use defaults for development
 ALLOWED_HOSTS = [
     h.strip()
-    for h in os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,::1,ariaabdii.pythonanywhere.com,aryaabdi.pythonanywhere.com,arya0325.pythonanywhere.com,aryaabdi1850325.pythonanywhere.com,aryaabdi13850325.pythonanywhere.com').split(',')
+    for h in os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,::1').split(',')
     if h.strip()
 ]
 # Always ensure PythonAnywhere domains are included
-for _pa_host in ['ariaabdii.pythonanywhere.com', 'aryaabdi.pythonanywhere.com', 'arya0325.pythonanywhere.com', 'aryaabdi1850325.pythonanywhere.com', 'aryaabdi13850325.pythonanywhere.com']:
+for _pa_host in _PYTHONANYWHERE_HOSTS:
     if _pa_host not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(_pa_host)
 
@@ -278,12 +288,7 @@ CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:8000',
     'http://[::1]',
     'http://[::1]:8000',
-    'https://ariaabdii.pythonanywhere.com',
-    'https://aryaabdi.pythonanywhere.com',
-    'https://arya0325.pythonanywhere.com',
-    'https://aryaabdi1850325.pythonanywhere.com',
-    'https://aryaabdi13850325.pythonanywhere.com',
-]
+] + [f'https://{_pa_host}' for _pa_host in _PYTHONANYWHERE_HOSTS]
 
 # Add production CSRF origins if not in debug mode
 if not DEBUG:
