@@ -27,7 +27,7 @@
 {% if LANGUAGE_BIDI %}<link rel="stylesheet" href="{% static "admin/css/responsive_rtl.css" %}">{% endif %}
 {% endblock %}
 
-<link rel="stylesheet" href="{% static "admin/css/ario-admin.css" %}?v=2026-10-30a">
+<link rel="stylesheet" href="{% static "admin/css/ario-admin.css" %}?v=2026-11-05a">
 {% block blockbots %}<meta name="robots" content="NONE,NOARCHIVE">{% endblock %}
 </head>
 
@@ -311,13 +311,12 @@
               {% block sidebar %}{% endblock %}
             </div>
 
-            {% block footer %}
-            <footer id="footer" class="adm-footer">
-                <span>آریو شاپ · پنل مدیریت · {% jalali_today %}</span>
-                <span class="adm-footer__dot" aria-hidden="true"></span>
-                <span>ساخته‌شده برای یک فروشگاه مرتب</span>
-            </footer>
-            {% endblock %}
+            {% comment %}
+                The old two-line footer (brand + jalali date + tagline) was removed:
+                on narrow/zoomed viewports it collapsed into a word-per-line column
+                in the corner. The rail and topbar already carry the branding.
+            {% endcomment %}
+            {% block footer %}{% endblock %}
         </main>
     </div>
 </div>
@@ -358,7 +357,7 @@
     </div>
 </div>
 
-<script src="{% static 'admin/js/ario-admin.js' %}?v=2026-10-30a" defer></script>
+<script src="{% static 'admin/js/ario-admin.js' %}?v=2026-11-05a" defer></script>
 {% block extrabody %}{% endblock %}
 </body>
 </html>

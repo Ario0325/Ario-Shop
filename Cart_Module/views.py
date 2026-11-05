@@ -355,19 +355,18 @@ def cart_update(request):
 
 
 def cart_context(request):
-    """برای استفاده در هدر: تعداد آیتم، جمع کل و چند آیتم اول برای دراپ‌داون - با کشینگ"""
-    cache_key = cart_cache_key(request)
+    """برای استفاده در هدر: تعداد آیتم، جمع کل و اقلام سبد.
 
-    if cache_key:
-        cached_context = cache.get(cache_key)
-        if cached_context is not None:
-            return cached_context
-
+    قبلاً این context به مدت ۲ دقیقه در LocMemCache کش می‌شد؛ چون LocMem
+    بین workerها مشترک نیست، پس از افزودن محصول به سبد ممکن بود صفحهٔ اصلی
+    تا پایان عمر کش، سبد قدیمی را نشان دهد. محاسبهٔ سبد ارزان است، بنابراین
+    همیشه تازه محاسبه می‌شود.
+    """
     items, totals = _totals_for_request(request)
-    context = {
+    return {
         'cart_count': sum(i['quantity'] for i in items),
         'cart_total': totals['subtotal'],
-        'cart_items_preview': items,  # همهٔ اقلام برای دراور سبد
+        'cart_items_preview': items,  # همهٔ اقلام برای دراور/دراپ‌داون سبد
         'cart_shipping_cost': totals['shipping_cost'],
         'cart_total_payable': totals['total_payable'],
         'free_shipping_remaining': totals['free_shipping_remaining'],
@@ -376,17 +375,15 @@ def cart_context(request):
         'is_free_shipping': totals['is_free_shipping'],
     }
 
-    if cache_key:
-        cache.set(cache_key, context, 60 * 2)
-
-    return context
-
 
 @never_cache
 def cart_drawer(request):
-    """HTML تازهٔ دراور سبد برای به‌روزرسانی بدون رفرش."""
+    """HTML تازهٔ سبد برای به‌روزرسانی بدون رفرش (دراور موبایل یا دراپ‌داون دسکتاپ)."""
     items, totals = _totals_for_request(request)
+    is_dropdown = request.GET.get('variant') == 'dropdown'
     return render(request, 'cart/_drawer.html', {
+        'is_dropdown': is_dropdown,
+        'cart_title_id': 'arCartDropTitle' if is_dropdown else 'arCartTitle',
         'cart_count': sum(i['quantity'] for i in items),
         'cart_items_preview': items,
         'cart_total': totals['subtotal'],
@@ -397,6 +394,13 @@ def cart_drawer(request):
         'free_shipping_threshold': totals['free_shipping_threshold'],
         'is_free_shipping': totals['is_free_shipping'],
     })
+
+
+@never_cache
+def cart_state(request):
+    """وضعیت سبک سبد به‌صورت JSON برای همگام‌سازی بعد از بازگشت از bfcache."""
+    items, totals = _totals_for_request(request)
+    return JsonResponse(_cart_payload(items, totals))
 
 
 # ─────────────────────────────────────────────────────────────────────────────

@@ -1400,6 +1400,120 @@ select.form-control,
 }
 .ar-cartbtn { position: relative; }
 
+/* cart dropdown (desktop) — anchored under the cart pill */
+.ar-cartwrap { position: relative; display: inline-flex; }
+
+.ar-cartdrop {
+    position: absolute;
+    top: calc(100% + 12px);
+    inset-inline-end: 0;
+    z-index: calc(var(--z-header) + 1);
+    width: min(396px, calc(100vw - 28px));
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px) scale(.985);
+    transform-origin: top left;
+    transition: opacity 180ms var(--ease-out), transform 180ms var(--ease-out), visibility 180ms;
+}
+[dir="rtl"] .ar-cartdrop { transform-origin: top right; }
+.ar-cartdrop.is-open { opacity: 1; visibility: visible; transform: none; }
+
+.ar-cartdrop__panel {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    max-height: min(74vh, 580px);
+    overflow: hidden;
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+    border-radius: 20px;
+    box-shadow: 0 34px 74px -30px rgba(36, 16, 27, .55), 0 12px 28px -20px rgba(36, 16, 27, .32);
+}
+
+.ar-cartdrop__caret {
+    position: absolute;
+    z-index: 2;
+    top: -6px;
+    inset-inline-end: 30px;
+    width: 12px;
+    height: 12px;
+    background: var(--surface);
+    border-top: 1px solid var(--border-soft);
+    border-inline-start: 1px solid var(--border-soft);
+    border-radius: 2px;
+    transform: rotate(45deg);
+}
+
+.ar-cartdrop .ar-drawer__head {
+    padding: 15px 18px 13px;
+    border-bottom: 1px solid var(--border-soft);
+}
+.ar-cartdrop .ar-drawer__title { font-size: .88rem; font-weight: 800; gap: 7px; }
+.ar-cartdrop .ar-drawer__close { width: 34px; height: 34px; }
+
+.ar-cartdrop .ar-drawer__body {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    padding: 4px 10px 8px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-2) transparent;
+}
+.ar-cartdrop .ar-drawer__body::-webkit-scrollbar { width: 6px; }
+.ar-cartdrop .ar-drawer__body::-webkit-scrollbar-thumb {
+    background: var(--border-2);
+    border-radius: 99px;
+}
+
+.ar-cartdrop .ar-cartline {
+    grid-template-columns: 56px minmax(0, 1fr) auto;
+    gap: 11px;
+    padding: 10px 6px;
+    border-bottom: 1px solid var(--border-soft);
+}
+.ar-cartdrop .ar-cartline:last-child { border-bottom: 0; }
+.ar-cartdrop .ar-cartline__img { width: 56px; height: 66px; }
+.ar-cartdrop .ar-cartline__name { font-size: var(--fs-2xs); line-height: 1.7; }
+.ar-cartdrop .ar-cartline__del { width: 36px; height: 36px; }
+
+.ar-cartdrop .ar-empty {
+    gap: 10px;
+    padding: 26px 16px;
+    border-radius: var(--r-md);
+}
+.ar-cartdrop .ar-empty__icon { width: 46px; height: 46px; font-size: 18px; }
+.ar-cartdrop .ar-empty p { font-size: var(--fs-2xs); line-height: 1.9; }
+
+.ar-cartdrop .ar-drawer__foot {
+    padding: 12px 16px 14px;
+    border-top: 1px solid var(--border-soft);
+    background: var(--surface);
+}
+.ar-cartdrop .ar-ship { padding: 10px 12px; margin-bottom: 8px; }
+.ar-cartdrop .ar-ship__msg { font-size: var(--fs-2xs); }
+.ar-cartdrop .ar-totalrow { padding-block: 4px; }
+.ar-cartdrop .ar-totalrow--grand { margin-top: 6px; padding-top: 9px; }
+.ar-cartdrop .ar-totalrow--grand strong { font-size: var(--fs-md); }
+.ar-cartdrop .ar-btn { min-height: 44px; }
+
+.ar-cartdrop__continue {
+    display: block;
+    width: 100%;
+    min-height: 40px;
+    margin-top: 2px;
+    color: var(--muted);
+    font-family: inherit;
+    font-size: var(--fs-2xs);
+    font-weight: 600;
+    text-align: center;
+    border-radius: 10px;
+    transition: background-color var(--t-fast), color var(--t-fast);
+}
+.ar-cartdrop__continue:hover { background: var(--surface-2); color: var(--text); }
+
 /* category mega panel under the sticky bar */
 .ar-mega {
     position: absolute;
@@ -2663,6 +2777,7 @@ html.is-preloaded .ar-footer {
     .ar-cartbtn { min-height: 42px; padding: 4px; }
     .ar-cartbtn__icon { width: 34px; height: 34px; }
     .ar-cartbtn__count { top: -4px; inset-inline-end: -4px; }
+    .ar-cartdrop { display: none !important; }
 
     .ar-footer__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-4); }
     .ar-footer__cell--brand { grid-column: 1 / -1; grid-row: auto; }

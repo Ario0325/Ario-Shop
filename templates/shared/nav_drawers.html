@@ -126,8 +126,10 @@
 <!-- ══ cart drawer ═══════════════════════════════════════════════════════ -->
 <aside class="ar-drawer" id="ar-drawer-cart" role="dialog" aria-modal="true"
        aria-labelledby="arCartTitle" aria-hidden="true"
-       data-ar-drawer-url="{% url 'cart:drawer' %}">
-    {% include 'cart/_drawer.html' %}
+       data-ar-cart-panel
+       data-ar-drawer-url="{% url 'cart:drawer' %}"
+       data-ar-cart-state-url="{% url 'cart:state' %}">
+    {% include 'cart/_drawer.html' with cart_title_id='arCartTitle' %}
 </aside>
 
 <!-- ══ search panel ══════════════════════════════════════════════════════ -->

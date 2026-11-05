@@ -292,16 +292,34 @@
         });
 
         on(window, "pageshow", function (e) {
-            if (!e.persisted) return;
-            var pre = doc.getElementById("ar-preloader");
-            if (pre) pre.classList.add("is-done");
-            root.classList.remove("is-preloading");
-            root.classList.add("is-preloaded");
-            layers = [];
-            setPageInert(false);
-            lockScroll(false);
-            $$("form[data-submitting]").forEach(function (form) { delete form.dataset.submitting; });
-            $$(".is-loading").forEach(function (el) { el.classList.remove("is-loading"); });
+            var navEntry = null;
+            try {
+                navEntry = performance.getEntriesByType && performance.getEntriesByType("navigation")[0];
+            } catch (err) {}
+            var restored = e.persisted || (navEntry && navEntry.type === "back_forward");
+            if (!restored) return;
+
+            if (e.persisted) {
+                var pre = doc.getElementById("ar-preloader");
+                if (pre) pre.classList.add("is-done");
+                root.classList.remove("is-preloading");
+                root.classList.add("is-preloaded");
+                layers = [];
+                setPageInert(false);
+                lockScroll(false);
+                $$("form[data-submitting]").forEach(function (form) { delete form.dataset.submitting; });
+                $$(".is-loading").forEach(function (el) { el.classList.remove("is-loading"); });
+            }
+
+            /* bfcache restores the old DOM, including a cart snapshot that may
+               predate the last add-to-cart. Mark the panels stale and re-read
+               the live cart so the badge and dropdown match the session. */
+            $$("[data-ar-cart-panel]").forEach(function (panel) {
+                panel.setAttribute("data-stale", "1");
+            });
+            var drop = doc.getElementById("ar-cartdrop");
+            if (drop && drop._arClose) drop._arClose(false);
+            syncCartState();
         });
     }
 
@@ -729,12 +747,29 @@
     }
 
     function markCartDrawerStale() {
-        var drawer = doc.getElementById("ar-drawer-cart");
-        if (!drawer) return;
-        drawer.setAttribute("data-stale", "1");
-        if (drawer.classList.contains("is-open") && window.fetch) {
-            drawer.dispatchEvent(new CustomEvent("ar:refresh-cart"));
-        }
+        $$("[data-ar-cart-panel]").forEach(function (panel) {
+            panel.setAttribute("data-stale", "1");
+            var drop = panel.closest(".ar-cartdrop");
+            var isOpen = panel.classList.contains("is-open") || (drop && drop.classList.contains("is-open"));
+            if (isOpen && window.fetch) {
+                panel.dispatchEvent(new CustomEvent("ar:refresh-cart"));
+            }
+        });
+    }
+
+    function syncCartState() {
+        var panel = $("[data-ar-cart-panel]");
+        var url = panel && panel.getAttribute("data-ar-cart-state-url");
+        if (!url || !window.fetch) return;
+        fetch(url, {
+            headers: { "X-Requested-With": "XMLHttpRequest", "Accept": "application/json" },
+            credentials: "same-origin",
+            cache: "no-store"
+        }).then(function (res) {
+            return res.json();
+        }).then(function (payload) {
+            if (payload && payload.cart) applyCartPayload(payload.cart);
+        }).catch(function () {});
     }
 
     function applyCartPayload(cart) {
@@ -886,49 +921,55 @@
         });
     }
 
-    function initCartDrawer() {
-        var drawer = doc.getElementById("ar-drawer-cart");
-        if (!drawer || !window.fetch) return;
+    function initCartPanels() {
+        if (!window.fetch) return;
 
-        var refresh = function () {
-            var url = drawer.getAttribute("data-ar-drawer-url");
-            if (!url) return;
-            var token = (drawer._arToken || 0) + 1;
-            drawer._arToken = token;
-            drawer.setAttribute("aria-busy", "true");
+        $$("[data-ar-cart-panel]").forEach(function (panel) {
+            if (panel._arCartReady) return;
+            panel._arCartReady = true;
 
-            fetch(url, {
-                headers: { "X-Requested-With": "XMLHttpRequest", "Accept": "text/html" },
-                credentials: "same-origin",
-                cache: "no-store"
-            }).then(function (res) {
-                return res.text();
-            }).then(function (html) {
-                if (token !== drawer._arToken) return;
-                drawer.innerHTML = html;
-                drawer.setAttribute("data-stale", "0");
-                drawer.removeAttribute("aria-busy");
-                initQty();
+            var refresh = function () {
+                var url = panel.getAttribute("data-ar-drawer-url");
+                if (!url) return;
+                var token = (panel._arToken || 0) + 1;
+                panel._arToken = token;
+                panel.setAttribute("aria-busy", "true");
 
-                if (drawer.classList.contains("is-open")) {
-                    var active = doc.activeElement;
-                    if (!active || active === doc.body || !drawer.contains(active)) {
-                        var close = $(".ar-drawer__close", drawer);
-                        if (close) {
-                            try { close.focus({ preventScroll: true }); } catch (err) { close.focus(); }
+                fetch(url, {
+                    headers: { "X-Requested-With": "XMLHttpRequest", "Accept": "text/html" },
+                    credentials: "same-origin",
+                    cache: "no-store"
+                }).then(function (res) {
+                    return res.text();
+                }).then(function (html) {
+                    if (token !== panel._arToken) return;
+                    panel.innerHTML = html;
+                    panel.setAttribute("data-stale", "0");
+                    panel.removeAttribute("aria-busy");
+                    initQty();
+
+                    var drop = panel.closest(".ar-cartdrop");
+                    var isOpen = panel.classList.contains("is-open") || (drop && drop.classList.contains("is-open"));
+                    if (isOpen) {
+                        var active = doc.activeElement;
+                        if (!active || active === doc.body || !panel.contains(active)) {
+                            var close = $(".ar-drawer__close", panel);
+                            if (close) {
+                                try { close.focus({ preventScroll: true }); } catch (err) { close.focus(); }
+                            }
                         }
                     }
-                }
-            }).catch(function () {
-                drawer.setAttribute("data-stale", "1");
-                drawer.removeAttribute("aria-busy");
-            });
-        };
+                }).catch(function () {
+                    panel.setAttribute("data-stale", "1");
+                    panel.removeAttribute("aria-busy");
+                });
+            };
 
-        on(drawer, "ar:open", function () {
-            if (drawer.getAttribute("data-stale") === "1") refresh();
+            on(panel, "ar:open", function () {
+                if (panel.getAttribute("data-stale") === "1") refresh();
+            });
+            on(panel, "ar:refresh-cart", refresh);
         });
-        on(drawer, "ar:refresh-cart", refresh);
 
         on(doc, "submit", function (e) {
             var form = e.target.closest("[data-ar-cart-remove]");
@@ -956,6 +997,103 @@
                 if (btn) btn.disabled = false;
             });
         });
+    }
+
+    function initCartDropdown() {
+        var trigger = $("[data-ar-cart-toggle]");
+        var drop = doc.getElementById("ar-cartdrop");
+        if (!trigger || !drop) return;
+
+        var root = trigger.closest(".ar-cartwrap") || drop;
+        var panel = $("[data-ar-cart-panel]", drop);
+        var desktop = window.matchMedia ? window.matchMedia("(min-width: 993px)") : null;
+        var open = false;
+        var timer = null;
+
+        var isDesktop = function () { return desktop ? desktop.matches : true; };
+
+        var focusInto = function () {
+            if (!panel) return;
+            var first = $(".ar-drawer__close, a[href], button:not([disabled])", panel);
+            if (first) {
+                try { first.focus({ preventScroll: true }); } catch (err) { first.focus(); }
+            }
+        };
+
+        var openDrop = function () {
+            if (open) return;
+            open = true;
+            clearTimeout(timer);
+            drop.hidden = false;
+            void drop.offsetWidth;
+            drop.classList.add("is-open");
+            trigger.setAttribute("aria-expanded", "true");
+            if (panel && panel.getAttribute("data-stale") === "1") {
+                panel.dispatchEvent(new CustomEvent("ar:refresh-cart"));
+            }
+            setTimeout(focusInto, 120);
+        };
+
+        var closeDrop = function (restoreFocus) {
+            if (!open) return;
+            open = false;
+            drop.classList.remove("is-open");
+            trigger.setAttribute("aria-expanded", "false");
+            clearTimeout(timer);
+            timer = setTimeout(function () {
+                if (!open) drop.hidden = true;
+            }, 180);
+            if (restoreFocus) {
+                try { trigger.focus({ preventScroll: true }); } catch (err) { trigger.focus(); }
+            }
+        };
+
+        on(trigger, "click", function (e) {
+            e.preventDefault();
+            if (isDesktop()) {
+                if (open) closeDrop(true);
+                else openDrop();
+                return;
+            }
+            var drawer = doc.getElementById("ar-drawer-cart");
+            if (drawer) openLayer(drawer, trigger);
+        });
+
+        on(doc, "click", function (e) {
+            if (!open) return;
+            if (root.contains(e.target)) return;
+            closeDrop(false);
+        });
+
+        on(doc, "keydown", function (e) {
+            if (e.key !== "Escape" || !open) return;
+            e.preventDefault();
+            closeDrop(true);
+        });
+
+        on(drop, "click", function (e) {
+            if (e.target.closest("[data-ar-cartdrop-close]")) {
+                e.preventDefault();
+                closeDrop(true);
+            }
+        });
+
+        var onModeChange = function () {
+            var drawer = doc.getElementById("ar-drawer-cart");
+            if (isDesktop()) {
+                trigger.setAttribute("aria-controls", "ar-cartdrop");
+            } else {
+                trigger.setAttribute("aria-controls", drawer ? "ar-drawer-cart" : "ar-cartdrop");
+                closeDrop(false);
+            }
+        };
+        onModeChange();
+        if (desktop) {
+            if (desktop.addEventListener) desktop.addEventListener("change", onModeChange);
+            else if (desktop.addListener) desktop.addListener(onModeChange);
+        }
+
+        drop._arClose = closeDrop;
     }
 
     /* ----------------------------------------------------------------------
@@ -2171,7 +2309,8 @@
         initVariants();
         initQty();
         initCartAjax();
-        initCartDrawer();
+        initCartPanels();
+        initCartDropdown();
         initCartPage();
         initFilters();
         initOtp();

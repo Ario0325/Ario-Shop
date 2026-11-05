@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ario-shop-v12';
+const CACHE_NAME = 'ario-shop-v13';
 // Text font weights stay out of the install list: they are cached on first use
 // by cacheFirst below, which keeps the install fast and light on mobile data.
 const STATIC_ASSETS = [

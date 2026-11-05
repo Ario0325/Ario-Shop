@@ -7,11 +7,11 @@
 {% endcomment %}
 <div class="ar-drawer__inner" data-ar-cart-drawer-body>
     <div class="ar-drawer__head">
-        <h2 class="ar-drawer__title" id="arCartTitle">
+        <h2 class="ar-drawer__title" id="{{ cart_title_id|default:'arCartTitle' }}">
             سبد خرید
             <span class="ar-badge" data-ar-cart-count>{{ cart_count|default:0|ar_digits }}</span>
         </h2>
-        <button class="ar-drawer__close" type="button" data-ar-close aria-label="بستن سبد خرید">
+        <button class="ar-drawer__close" type="button" {% if is_dropdown %}data-ar-cartdrop-close{% else %}data-ar-close{% endif %} aria-label="بستن سبد خرید">
             <i class="icon-close" aria-hidden="true"></i>
         </button>
     </div>
@@ -66,8 +66,13 @@
             <strong data-ar-cart-payable>{{ cart_total_payable|default:0|toman }}</strong>
         </div>
         <a class="ar-btn ar-btn--primary ar-btn--block mt-3" href="{% url 'cart:detail' %}">
-            مشاهده سبد و تکمیل خرید
+            {% if is_dropdown %}مشاهده سبد و تسویه حساب{% else %}مشاهده سبد و تکمیل خرید{% endif %}
         </a>
+        {% if is_dropdown %}
+        <button class="ar-cartdrop__continue" type="button" data-ar-cartdrop-close>
+            ادامه خرید
+        </button>
+        {% endif %}
     </div>
     {% endif %}
 </div>
