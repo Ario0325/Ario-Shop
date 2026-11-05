@@ -61,6 +61,13 @@ for _pa_host in _PYTHONANYWHERE_HOSTS:
     if _pa_host not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(_pa_host)
 
+# Public origin used for canonical, Open Graph and JSON-LD URLs.
+# Pinning it prevents the extra PythonAnywhere hostnames from being indexed
+# as duplicate sites. Override with SITE_BASE_URL when a custom domain is added.
+SITE_BASE_URL = os.environ.get(
+    'SITE_BASE_URL', 'https://aryaabdishop.pythonanywhere.com'
+).rstrip('/')
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -114,6 +121,7 @@ TEMPLATES = [
                 'Products_Module.context_processors.navbar_categories',
                 'Core_Module.context_processors.site_settings',
                 'Contact_Module.context_processors.contact_info',
+                'Core_Module.context_processors.seo',
             ],
         },
     },

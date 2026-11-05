@@ -2,8 +2,12 @@
 {% load static %}
 {% load number_tags %}
 
-{% block title %}{% if query %}نتایج جستجو برای «{{ query }}»{% elif selected_category %}{{ selected_category.name }}{% else %}فروشگاه{% endif %} | آریو شاپ{% endblock %}
-{% block meta_description %}{% if selected_category %}خرید {{ selected_category.name }} از آریو شاپ با ارسال سریع و ضمانت اصالت کالا.{% else %}لیست کامل محصولات آریو شاپ؛ فیلتر بر اساس دسته‌بندی، برند، سایز و قیمت.{% endif %}{% endblock %}
+{% block title %}{% if query %}نتایج جستجو برای «{{ query }}»{% elif selected_category %}{{ selected_category.name }}{% else %}فروشگاه{% endif %} | آریو شاپ{% if page_obj.number > 1 %} — صفحه {{ page_obj.number|ar_digits }}{% endif %}{% endblock %}
+{% block meta_description %}{% if query %}نتایج جستجو در آریو شاپ برای «{{ query }}»؛ مشاهده محصولات منطبق با ارسال سریع و ضمانت اصالت.{% elif selected_category %}خرید {{ selected_category.name }} از آریو شاپ با ارسال سریع و ضمانت اصالت کالا.{% else %}لیست کامل محصولات آریو شاپ؛ فیلتر بر اساس دسته‌بندی، برند، سایز و قیمت.{% endif %}{% endblock %}
+{% block canonical %}{{ seo_canonical }}{% endblock %}
+{% block og_url %}{{ seo_canonical }}{% endblock %}
+{% block og_title %}{% if query %}نتایج جستجو برای «{{ query }}»{% elif selected_category %}{{ selected_category.name }}{% else %}فروشگاه{% endif %} | آریو شاپ{% endblock %}
+{% block og_description %}{% if query %}نتایج جستجو در آریو شاپ برای «{{ query }}».{% elif selected_category %}خرید {{ selected_category.name }} از آریو شاپ با ارسال سریع و ضمانت اصالت کالا.{% else %}لیست کامل محصولات آریو شاپ؛ فیلتر بر اساس دسته‌بندی، برند، سایز و قیمت.{% endif %}{% endblock %}
 
 {% block content %}
 {% url 'products:list' as shop_url %}

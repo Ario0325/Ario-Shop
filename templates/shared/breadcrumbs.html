@@ -1,25 +1,34 @@
 {% comment %}
-    Breadcrumb trail (maximum four levels incl. home). Pass:
+    Breadcrumb trail (maximum four levels incl. home) with schema.org
+    BreadcrumbList microdata. Pass:
       crumb1_title / crumb1_url  (e.g. فروشگاه → /shop/)
       crumb2_title / crumb2_url  (e.g. دسته → category URL)
       crumb_last                 (current page label, always required)
       crumb_last_ltr             (set to 1 for codes/IDs that should stay LTR)
 {% endcomment %}
 <nav aria-label="مسیر صفحه">
-    <ol class="ar-crumbs">
-        <li><a href="{% url 'index' %}">خانه</a></li>
+    <ol class="ar-crumbs" itemscope itemtype="https://schema.org/BreadcrumbList">
+        <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+            <a itemprop="item" href="{% url 'index' %}"><span itemprop="name">خانه</span></a>
+            <meta itemprop="position" content="1">
+        </li>
         {% if crumb1_title %}
-        <li>
-            {% if crumb1_url %}<a href="{{ crumb1_url }}">{{ crumb1_title }}</a>
-            {% else %}<span>{{ crumb1_title }}</span>{% endif %}
+        <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+            {% if crumb1_url %}<a itemprop="item" href="{{ crumb1_url }}"><span itemprop="name">{{ crumb1_title }}</span></a>
+            {% else %}<span itemprop="name">{{ crumb1_title }}</span>{% endif %}
+            <meta itemprop="position" content="2">
         </li>
         {% endif %}
         {% if crumb2_title %}
-        <li>
-            {% if crumb2_url %}<a href="{{ crumb2_url }}">{{ crumb2_title }}</a>
-            {% else %}<span>{{ crumb2_title }}</span>{% endif %}
+        <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+            {% if crumb2_url %}<a itemprop="item" href="{{ crumb2_url }}"><span itemprop="name">{{ crumb2_title }}</span></a>
+            {% else %}<span itemprop="name">{{ crumb2_title }}</span>{% endif %}
+            <meta itemprop="position" content="3">
         </li>
         {% endif %}
-        <li><span aria-current="page"{% if crumb_last_ltr %} dir="ltr"{% endif %}>{{ crumb_last|default:"صفحه" }}</span></li>
+        <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+            <span itemprop="name" aria-current="page"{% if crumb_last_ltr %} dir="ltr"{% endif %}>{{ crumb_last|default:"صفحه" }}</span>
+            <meta itemprop="position" content="{% if crumb2_title %}4{% elif crumb1_title %}3{% else %}2{% endif %}">
+        </li>
     </ol>
 </nav>

@@ -1,5 +1,5 @@
-{% load static %}<!DOCTYPE html>
-<html lang="fa" dir="rtl">
+{% load static seo_tags %}<!DOCTYPE html>
+<html lang="fa-IR" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -9,9 +9,8 @@
 
     <title>{% block title %}فروشگاه اینترنتی آریو شاپ{% endblock %}</title>
     <meta name="description" content="{% block meta_description %}آریو شاپ، فروشگاه اینترنتی با انتخاب گسترده‌ای از محصولات اصل، ارسال سریع و پرداخت امن.{% endblock %}">
-    <meta name="keywords" content="{% block keywords %}فروشگاه اینترنتی, خرید آنلاین, آریو شاپ{% endblock %}">
-    <meta name="robots" content="index, follow">
-    <link rel="canonical" href="{% block canonical %}{{ request.build_absolute_uri }}{% endblock %}">
+    <meta name="robots" content="{% block robots %}{{ seo_robots|default:'index, follow' }}{% endblock %}">
+    <link rel="canonical" href="{% block canonical %}{{ seo_canonical }}{% endblock %}">
 
     <!-- Open Graph / Twitter -->
     <meta property="og:type" content="{% block og_type %}website{% endblock %}">
@@ -19,9 +18,14 @@
     <meta property="og:locale" content="fa_IR">
     <meta property="og:title" content="{% block og_title %}فروشگاه اینترنتی آریو شاپ{% endblock %}">
     <meta property="og:description" content="{% block og_description %}خرید آنلاین با بهترین قیمت، ارسال سریع و ضمانت اصالت کالا.{% endblock %}">
-    <meta property="og:image" content="{% block og_image %}{{ request.scheme }}://{{ request.get_host }}{% static 'assets/images/icons/apple-touch-icon.png' %}{% endblock %}">
-    <meta property="og:url" content="{{ request.build_absolute_uri }}">
+    <meta property="og:image" content="{% block og_image %}{{ seo_base_url }}{% static 'assets/images/icons/apple-touch-icon.png' %}{% endblock %}">
+    <meta property="og:image:alt" content="{% block og_image_alt %}آریو شاپ{% endblock %}">
+    <meta property="og:url" content="{% block og_url %}{{ seo_canonical }}{% endblock %}">
     <meta name="twitter:card" content="summary_large_image">
+
+    {% organization_jsonld %}
+    {% website_jsonld %}
+    {% block extra_head %}{% endblock %}
 
     <meta name="apple-mobile-web-app-title" content="آریو شاپ">
     <meta name="application-name" content="آریو شاپ">

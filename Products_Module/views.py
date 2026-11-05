@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.urls import reverse
 from django.core.cache import cache
 from django_ratelimit.decorators import ratelimit
+from Core_Module.seo import absolute_url
 from Core_Module.templatetags.number_tags import toman as format_toman
 from Core_Module.thumbnails import thumb_url
 from .models import Product, Category, Brand, ProductColor, ProductImage
@@ -216,6 +217,28 @@ def _filter_context(request, brands, category_path=None):
     }
 
 
+def _catalog_seo(request, *, category=None, search=False, filters_active=False, page_obj=None):
+    """Canonical URL and robots policy for listing pages.
+
+    Search and filtered results are thin duplicates, so they are noindexed and
+    canonicalized to the clean catalog URL. Unfiltered pagination stays
+    indexable with a self-canonical that only keeps the real page number —
+    this also absorbs ``?page=1``, ``?page=abc`` and clamped page numbers.
+    """
+    if search:
+        return absolute_url(request, reverse('products:search')), 'noindex, follow'
+
+    clean_path = category.get_absolute_url() if category else reverse('products:list')
+    empty = page_obj is not None and page_obj.paginator.count == 0
+    if filters_active or empty:
+        return absolute_url(request, clean_path), 'noindex, follow'
+
+    params = None
+    if page_obj is not None and page_obj.number > 1:
+        params = {'page': page_obj.number}
+    return absolute_url(request, clean_path, params), 'index, follow'
+
+
 def product_list(request):
     """نمایش لیست محصولات با فیلترینگ - بهینه شده"""
 
@@ -249,6 +272,15 @@ def product_list(request):
         del get_params['page']
     query_string = get_params.urlencode()
 
+    filters = _filter_context(request, brands)
+    # ?category= is a duplicate of /shop/category/<slug>/ and is counted as a
+    # filter by _filter_context; do not let it trigger noindex on its own.
+    category_bonus = 1 if selected_category and request.GET.get('category') else 0
+    filters_active = filters['applied_count'] - category_bonus > 0
+    seo_canonical, seo_robots = _catalog_seo(
+        request, category=selected_category, filters_active=filters_active, page_obj=page_obj
+    )
+
     context = {
         'page_obj': page_obj,
         'products': page_obj.object_list,
@@ -259,7 +291,9 @@ def product_list(request):
         'current_sort': sort,
         'total_products': paginator.count,
         'query_string': query_string,
-        **_filter_context(request, brands),
+        'seo_canonical': seo_canonical,
+        'seo_robots': seo_robots,
+        **filters,
     }
 
     return render(request, 'products/product_list.html', context)
@@ -274,7 +308,8 @@ def product_detail(request, slug):
             'colors',
             'sizes',
         ).annotate(
-            avg_rating=Avg('reviews__rating', filter=Q(reviews__is_approved=True))
+            avg_rating=Avg('reviews__rating', filter=Q(reviews__is_approved=True)),
+            review_count=Count('reviews', filter=Q(reviews__is_approved=True), distinct=True),
         ),
         slug=slug,
         is_active=True
@@ -395,6 +430,11 @@ def category_products(request, slug):
         del get_params['page']
     query_string = get_params.urlencode()
 
+    filters = _filter_context(request, brands, category_path=category)
+    seo_canonical, seo_robots = _catalog_seo(
+        request, category=category, filters_active=filters['applied_count'] > 0, page_obj=page_obj
+    )
+
     context = {
         'category': category,
         'selected_category': category,
@@ -405,7 +445,9 @@ def category_products(request, slug):
         'current_sort': sort,
         'total_products': paginator.count,
         'query_string': query_string,
-        **_filter_context(request, brands, category_path=category),
+        'seo_canonical': seo_canonical,
+        'seo_robots': seo_robots,
+        **filters,
     }
 
     return render(request, 'products/product_list.html', context)
@@ -446,6 +488,9 @@ def search_products(request):
         del get_params['page']
     query_string = get_params.urlencode()
 
+    filters = _filter_context(request, brands)
+    seo_canonical, seo_robots = _catalog_seo(request, search=True, page_obj=page_obj)
+
     context = {
         'query': query,
         'page_obj': page_obj,
@@ -456,7 +501,9 @@ def search_products(request):
         'current_sort': sort,
         'total_products': paginator.count,
         'query_string': query_string,
-        **_filter_context(request, brands),
+        'seo_canonical': seo_canonical,
+        'seo_robots': seo_robots,
+        **filters,
     }
 
     return render(request, 'products/product_list.html', context)

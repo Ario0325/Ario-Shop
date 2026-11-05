@@ -3,6 +3,7 @@ from django.http import HttpResponse
 from django.core.cache import cache
 from django.db.models import Count, Q
 from Products_Module.models import Product, Category
+from Core_Module.seo import site_base_url
 
 
 def index(request):
@@ -57,8 +58,9 @@ def robots_txt(request):
         'Disallow: /admin/',
         'Disallow: /accounts/',
         'Disallow: /cart/',
-        'Disallow: /admin/core/',
+        'Disallow: /shop/suggest/',
+        'Disallow: /*?*sort=',
         '',
-        f'Sitemap: {request.build_absolute_uri("/sitemap.xml")}',
+        f'Sitemap: {site_base_url(request)}/sitemap.xml',
     ]
     return HttpResponse('\n'.join(lines), content_type='text/plain')

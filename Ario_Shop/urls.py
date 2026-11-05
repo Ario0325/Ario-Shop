@@ -22,6 +22,7 @@ from django.contrib.sitemaps.views import sitemap
 from django.http import HttpResponse, Http404
 from django.views.decorators.cache import cache_control
 from Products_Module.sitemaps import ProductSitemap, CategorySitemap
+from Core_Module.sitemaps import StaticSitemap
 
 
 @cache_control(max_age=0, no_cache=True, no_store=True)
@@ -45,6 +46,7 @@ def manifest(request):
     return response
 
 sitemaps = {
+    'static': StaticSitemap,
     'products': ProductSitemap,
     'categories': CategorySitemap,
 }

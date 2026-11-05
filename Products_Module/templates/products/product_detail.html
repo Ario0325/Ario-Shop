@@ -3,13 +3,16 @@
 {% load number_tags %}
 {% load math_filters %}
 {% load persian_date_tags %}
+{% load seo_tags %}
 
 {% block title %}{{ product.name }} | آریو شاپ{% endblock %}
-{% block meta_description %}{{ product.description|default:product.name|truncatewords:28 }}{% endblock %}
+{% block meta_description %}{{ product.description|default:product.name|striptags|truncatechars:160 }}{% endblock %}
 {% block og_title %}{{ product.name }} | آریو شاپ{% endblock %}
-{% block og_description %}{{ product.description|default:product.name|truncatewords:24 }}{% endblock %}
+{% block og_description %}{{ product.description|default:product.name|striptags|truncatechars:160 }}{% endblock %}
 {% block og_type %}product{% endblock %}
-{% block og_image %}{% if product_images.0 %}{{ request.scheme }}://{{ request.get_host }}{{ product_images.0.image.url }}{% endif %}{% endblock %}
+{% block og_image %}{% if product_images.0 %}{{ seo_base_url }}{{ product_images.0.image.url }}{% else %}{{ seo_base_url }}{% static 'assets/images/icons/apple-touch-icon.png' %}{% endif %}{% endblock %}
+{% block og_image_alt %}{{ product.name }}{% endblock %}
+{% block extra_head %}{% product_jsonld %}{% endblock %}
 
 {% block content %}
 {% url 'products:list' as shop_url %}

@@ -18,7 +18,10 @@ class CategorySitemap(Sitemap):
     priority = 0.6
 
     def items(self):
-        return Category.objects.filter(is_active=True)
+        return Category.objects.filter(
+            is_active=True,
+            products__is_active=True,
+        ).distinct()
 
     def lastmod(self, obj):
         return obj.updated_at
